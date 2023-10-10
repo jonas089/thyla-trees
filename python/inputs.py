@@ -101,10 +101,15 @@ print(amount)
 message_combined = recipient + amount
 print("Message_Bytes: ", message_combined)
 
-secp.sign_and_print("jonas10")
+recipient = [57, 141, 121, 60, 115, 189, 115, 103, 174, 6, 108, 20, 114, 134, 156, 80, 7, 222, 7, 107, 196, 2, 216, 251, 119, 174, 151, 31, 19, 46, 39, 92]
+recipient_hex = bytes(recipient).hex()
+
+x = recipient_hex + "10"
+print(x)
+secp.sign_and_print(x)
 
 
-print("Message part1 bytes:", list("jonas".encode('utf-8')))
+print("Message part1 bytes:", list(recipient_hex.encode('utf-8')))
 print("Message part2 bytes:", list("10".encode('utf-8')))
 
 # Output:
