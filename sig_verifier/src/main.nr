@@ -13,6 +13,25 @@ fn hash_sha(message: [u8]) -> [u8; 32]{
     std::hash::sha256(message)
 }
 
+fn ascii_to_u64(arr: [u8]) -> u64 {
+    let mut result: u64 = 0;
+    let mut multiplier: u64 = 1;
+    let len = arr.len();
+
+    for i in 0..len {
+        // Convert ASCII to its integer equivalent
+        let int_val = (arr[len - i - 1] - 48) as u64;
+
+        // Multiply by the position's power of 10
+        result += int_val * multiplier;
+        
+        // Increase the multiplier for the next iteration
+        multiplier *= 10;
+    }
+
+    result
+}
+
 fn verify_signature(message_hash : [u8;32], pub_key_x : [u8;32], pub_key_y : [u8;32], signature : [u8;64]) -> bool {
     // Single signature verification
     let message_rehash = std::hash::sha256(message_hash);
@@ -114,6 +133,7 @@ impl StateMachine{
             )
         );
 
+        assert(ascii_to_u64(message.amount) == 10);
         // apply state transition to balance and merkle
         // ...
     }
