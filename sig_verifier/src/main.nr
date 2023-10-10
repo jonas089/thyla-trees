@@ -135,6 +135,8 @@ impl StateMachine{
 
         assert(ascii_to_u64(message.amount) == 10);
         // apply state transition to balance and merkle
+        // self.balances[recipient] -= 10 
+        // compute new merkle
         // ...
     }
 }
