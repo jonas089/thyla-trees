@@ -25,7 +25,7 @@ fn main(
     balances: [u64], 
     accounts: [[u8]], 
     merkle_in: [u8], 
-    sender_x: [[u8;32]], 
+    sender_x: [[u8;32]],
     sender_y: [[u8;32]],
     recipient: [[u8]],
     amount: [[u8]],
@@ -43,6 +43,8 @@ fn main(
         signature
     };
     let message: Message = state_machine.build_message(0);
+    let x: [u8] = [106, 111, 110, 97, 115, 49, 48];
+    state_machine.process_message(message);
     [[0]]
 }
 
@@ -77,7 +79,9 @@ struct StateMachine{
         // amount u64
         amount: [[u8]],
         /* message for sig (oversimplified / missing timestamp):
-            recipient + amount 
+            recipient + amount (+ timestamp) -> must in production ensure uniqueness
+
+            * to ensure uniqueness, include nonces in the input balance data.
         */
         signature: [[u8;64]]
 
@@ -99,7 +103,19 @@ impl StateMachine{
         }
     }
     fn process_message(self, message: Message){
+        // revert if a signature is invalid
 
+        assert(
+            verify_signature(
+                message.message_hash, 
+                self.sender_x[message.index], 
+                self.sender_y[message.index],
+                self.signature[message.index]
+            )
+        );
+
+        // apply state transition to balance and merkle
+        // ...
     }
 }
 
@@ -124,11 +140,15 @@ fn stateMachine(){
         [123, 123],
         [[57, 141, 121, 60, 115, 189, 115, 103, 174, 6, 108, 20, 114, 134, 156, 80, 7, 222, 7, 107, 196, 2, 216, 251, 119, 174, 151, 31, 19, 46, 39, 92]],
         [[207, 92, 161, 239, 169, 234, 3, 35, 59, 37, 172, 77, 65, 179, 24, 23, 210, 215, 112, 148, 177, 230, 247, 201, 131, 225, 233, 194, 143, 189, 239, 9]],
-        [[20]],
-        [[10]],
+        [[106, 111, 110, 97, 115]],
+        [[49, 48]],
         [[231, 122, 163, 143, 93, 12, 18, 132, 138, 215, 111, 46, 67, 202, 74, 30, 1, 182, 92, 92, 81, 117, 227, 209, 150, 177, 116, 185, 27, 220, 170, 134, 32, 74, 210,
         119, 169, 78, 210, 35, 203, 151, 209, 89, 232, 67, 39, 113, 78, 155, 34, 147, 86, 152, 75, 154, 158, 220, 35, 12, 255, 18, 23, 103]]
     );
+    /*
+    * message contains:
+        * recipient[u8].append(amount[u8])
+    */
 }
     
     

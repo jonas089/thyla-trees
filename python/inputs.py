@@ -94,6 +94,13 @@ secp = SECP256k1()
 # create new keypair and save at DEFAULT_TARGET
 secp.store(secp.new())
 # sign an oversimplified transaction
+recipient = list("jonas".encode('utf-8'))
+amount = list("10".encode('utf-8'))
+print(recipient)
+print(amount)
+message_combined = recipient + amount
+print("Message_Bytes: ", message_combined)
+
 secp.sign_and_print("jonas10")
 
 
