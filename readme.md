@@ -19,9 +19,8 @@ Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/circuit/src/m
 ## 1.2. Private inputs
 
 
-<div style="background-color:#ffe5e5; padding:15px; border-radius:5px; border:1px solid red;">
-    <strong>Warning:</strong> For development and testing some data types are temporarily changed.
-</div>
+⚠️ **WARNING:** For development and testing some datatypes are changed temporarily
+
 
 ```Rust
     sender_x: [[u8;32];n],
