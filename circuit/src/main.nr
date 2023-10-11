@@ -115,32 +115,23 @@ impl StateMachine{
         let mut i: u8 = 0;
         // wasteful loop since no 'break' or 'while' supported
         for a in self.accounts{
-            /*
-            if(a == message.recipient){
-                //self.balances[i] += ascii_to_u64(message.amount);
-                let amt = self.balances[i];
-                let new_balance: u64 = amt + ascii_to_u64(message.amount);
-                assert(new_balance == 10);
-                let mut new_balances: [u64;2] = [0,0];
-                let mut j: u8 = 0;
-                for b in self.balances{
-                    if j == i{
-                        new_balances[i] == new_balance;
-                    }
-                    else{
-                        new_balances[i] = self.balances[j];
-                    }
-                    j += 1;
+            let mut new_balances: [u64; 2] = [0,0];
+            let mut i: u8 = 0;
+            for account in self.accounts{
+                if account == message.recipient{
+                    new_balances[i] = self.balances[i] + ascii_to_u64(message.amount);
                 }
-                assert(new_balances[0] == 0);
-                assert(new_balances[1] == 10);
-                // apply new balances
-                let x: StateMachine = self.update_balance(new_balances);
-            }
-            else{
+                else if account == self.sender_x[i]{
+                    new_balances[i] = self.balances[i] - ascii_to_u64(message.amount);
+                }
+                else{
+                    new_balances[i] = self.balances[i];
+                }
                 i += 1;
             };
-            assert(i == 1);*/
+            assert(new_balances[0] == 0);
+            assert(new_balances[1] == 10);
+            let x: StateMachine = self.update_balance(new_balances);
         }
     }
     fn update_balance(self, balances: [u64;2]) -> StateMachine{
@@ -166,7 +157,7 @@ fn main(
     recipient: [[u8;32];1],
     amount: [[u8;2];1],
     // each return value as bytes
-    signature: [[u8;64];1]) -> pub[[u8;1]]{
+    signature: [[u8;64];1]) -> pub[[u8;1];1]{
     // use StateMachine to generate public outputs
     let mut state_machine = StateMachine{
         balances,
