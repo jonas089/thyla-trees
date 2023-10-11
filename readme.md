@@ -4,7 +4,7 @@
 
 The purpose of this repo is to explore potential zk rollup implementations in noir.
 
-Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/sig_verifier/src/main.nr)
+Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/circuit/src/main.nr)
 
 # 1. Typeology
 
