@@ -14,13 +14,30 @@ Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/sig_verifier/
     balances: [u64;n], 
     accounts: [[u8;32];n], 
     merkle_in: [u8;32], 
+```
+
+## 1.2. Private inputs
+
+```Rust
     sender_x: [[u8;32];n],
     sender_y: [[u8;32];n],
     recipient: [[u8;32];n],
-    amount: [[u8]],
+    amount: [[u8;8];n],
+    // or amount: [[u64;1];n]
 ```
 
-# CMD
+## 1.2. Public outputs
+```Rust
+    /* To be defined
+        * public outputs will include
+            * new merkle root
+            * new balances
+        -> return statement
+            * [[T;n];n] or [[[T;n];n];n]
+    */
+```
+
+# Use with Nargo client
 
 0. Run tests
 

@@ -1,157 +1,21 @@
 use dep::std;
-use dep::std::collections::vec::Vec;
-
+mod reactor;
+use reactor::{StateMachine, message::Message};
 /*
     To be done:
-        + sender (!inf. bal)
-        + timestamp
+        + sender (!inf. bal) -> done
+        + timestamp -> not necessary, use nonce instead.
+        + actual merkle hash computation
+        * see https://noir-lang.org/standard_library/merkle_trees or from-scratch
 
     Increases recipient balances, doesn't decrease sender
     balances.
 */
-fn hash_sha(message: [u8]) -> [u8; 32]{
-    std::hash::sha256(message)
-}
-
-fn ascii_to_u64(arr: [u8;2]) -> u64 {
-    let mut result: u64 = 0;
-    let mut multiplier: u64 = 1;
-    let len = arr.len();
-
-    for i in 0..len {
-        // Convert ASCII to its integer equivalent
-        let int_val = (arr[len - i - 1] - 48) as u64;
-
-        // Multiply by the position's power of 10
-        result += int_val * multiplier;
-        
-        // Increase the multiplier for the next iteration
-        multiplier *= 10;
-    }
-
-    result
-}
-
-fn verify_signature(message_hash : [u8;32], pub_key_x : [u8;32], pub_key_y : [u8;32], signature : [u8;64]) -> bool {
-    // Single signature verification
-    let message_rehash = std::hash::sha256(message_hash);
-    let valid_signature = std::ecdsa_secp256k1::verify_signature(pub_key_x, pub_key_y, signature, message_rehash);
-    //assert(valid_signature);
-    valid_signature
-}
-
-struct Message{
-    index: u8,
-    recipient: [u8;32],
-    amount: [u8;2],
-    message: [u8],
-    message_hash: [u8;32]
-}
-
-// Rollup state transitions
-struct StateMachine{
-
-    /* Old State */
-        balances: [u64;2],
-        accounts: [[u8;32];2],
-        merkle_in: [u8;2],
-
-    /* New Transactions */
-
-        // sender x and y coordinates -> use x coordinate as pubkey
-        sender_x: [[u8;32];1],
-        sender_y: [[u8;32];1],
-        // recipient hex string -> x coordinate of public key
-        recipient: [[u8;32];1],
-        // amount u64
-        amount: [[u8;2];1],
-        /* message for sig (oversimplified / missing timestamp):
-            recipient + amount (+ timestamp) -> must in production ensure uniqueness
-            * to ensure uniqueness, include nonces in the input balance data.
-        */
-        signature: [[u8;64];1]
-
-    // tbd: public output? -> main return values? -> figure out when tests pass
-}
-
-impl StateMachine{
-    fn build_message(self, index: u8) -> Message{
-        let recipient = self.recipient[index];
-        let amount = self.amount[index];
-
-        let recipient_slice: [u8] = recipient.as_slice();
-        let amount_slice: [u8] = amount.as_slice();
-        let mut message: [u8] = recipient.as_slice();
-        for byte in amount{
-            message = message.push_back(byte);
-        }
-        //message.append(amount_slice);
-        Message{
-            index: index,
-            recipient: self.recipient[index],
-            amount: amount,
-            message: message,
-            message_hash: hash_sha(message)
-        }
-    }
-    fn process_message(&mut self, message: Message){
-        // revert if a signature is invalid
-
-        assert(
-            verify_signature(
-                message.message_hash, 
-                self.sender_x[message.index], 
-                self.sender_y[message.index],
-                self.signature[message.index]
-            )
-        );
-
-        //assert(ascii_to_u64(message.amount) == 10);
-        let fixed_bytes: [u8;2] = [49, 48];
-        let x = ascii_to_u64(fixed_bytes);
-        assert(x == 10);
-        
-
-        let mut i: u8 = 0;
-        // wasteful loop since no 'break' or 'while' supported
-        for a in self.accounts{
-            let mut new_balances: [u64; 2] = [0,0];
-            let mut i: u8 = 0;
-            for account in self.accounts{
-                if account == message.recipient{
-                    new_balances[i] = self.balances[i] + ascii_to_u64(message.amount);
-                }
-                else if account == self.sender_x[i]{
-                    new_balances[i] = self.balances[i] - ascii_to_u64(message.amount);
-                }
-                else{
-                    new_balances[i] = self.balances[i];
-                }
-                i += 1;
-            };
-            assert(new_balances[0] == 0);
-            assert(new_balances[1] == 10);
-            let x: StateMachine = self.update_balance(new_balances);
-        }
-    }
-    fn update_balance(self, balances: [u64;2]) -> StateMachine{
-        StateMachine{
-            balances: balances,
-            accounts: self.accounts,
-            merkle_in: self.merkle_in,
-            sender_x: self.sender_x,
-            sender_y: self.sender_y,
-            recipient: self.recipient,
-            amount: self.amount,
-            signature: self.signature
-        }
-    }
-}
 
 fn main(
-    balances: [u64;2], 
-    accounts: [[u8;32];2], 
-    merkle_in: [u8;2], 
+    balances: pub [u64;2], 
+    accounts: pub [[u8;32];2], 
+    merkle_in: pub [u8;2], 
     sender_x: [[u8;32];1],
     sender_y: [[u8;32];1],
     recipient: [[u8;32];1],
@@ -204,22 +68,4 @@ fn stateMachine(){
         // signature bytes
         [[36, 242, 254, 140, 255, 254, 247, 61, 0, 116, 57, 148, 101, 115, 255, 56, 4, 30, 31, 139, 33, 45, 127, 73, 244, 136, 245, 205, 152, 214, 141, 20, 58, 40, 206, 47, 15, 120, 43, 70, 209, 148, 98, 207, 145, 15, 2, 175, 218, 253, 169, 230, 96, 91, 187, 191, 202, 63, 10, 144, 189, 85, 109, 169]]
     );
-    /*
-    * message contains:
-        * recipient[u8].append(amount[u8])
-    */
-}
-    
-    
-
-#[test]
-fn signatures() {
-    // Test Signature
-    let is_valid: bool = verify_signature(
-        [223, 253, 96, 33, 187, 43, 213, 176, 175, 103, 98, 144, 128, 158, 195, 165, 49, 145, 221, 129, 199, 247, 10, 75, 40, 104, 138, 54, 33, 130, 152, 111],
-        [77, 154, 126, 232, 196, 225, 168, 59, 92, 209, 131, 12, 75, 100, 207, 199, 5, 43, 99, 228, 204, 68, 6, 215, 158, 218, 115, 138, 189, 163, 55, 245],
-        [16, 228, 74, 23, 195, 86, 207, 3, 197, 97, 183, 204, 88, 193, 180, 218, 193, 183, 83, 215, 24, 137, 139, 93, 43, 143, 42, 151, 214, 102, 243, 75],
-        [230, 120, 141, 193, 123, 240, 107, 68, 229, 28, 43, 118, 121, 95, 209, 71, 158, 89, 0, 244, 242, 87, 223, 154, 39, 236, 163, 8, 122, 66, 225, 21, 38, 48, 182, 148, 244, 248, 85, 165, 224, 231, 211, 166, 42, 170, 118, 153, 140, 184, 20, 128, 195, 182, 233, 102, 181, 197, 208, 199, 240, 171, 150, 87]
-    );
-    assert(is_valid);
 }
