@@ -6,6 +6,29 @@ The purpose of this repo is to explore potential zk rollup implementations in no
 
 Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/circuit/src/main.nr)
 
+# ❗ Log of Limitations and Issues
+
+Issues
+```
+⭕ Some binary operations error (e.g. slice.append(slice)) in some cases
+```
+
+Limitations
+```
+❄️ All inputs to the circuit must be of fixed length
+    ❄️ pub_x ✅ 
+    ❄️ pub_y ✅ 
+    ❄️ recipients ✅ 
+    ❄️ signatures ✅ 
+    ❄️ amounts✅ 
+    ❄️ merkle root ✅ 
+    ❄️ balances ❌
+    ❄️ accounts ❌
+accounts => balances 1:1
+```
+❗ The amount of accounts supported by this circuit currently needs to be fixed.
+❗ This is not (yet) suitable for a real-world transaction system.
+
 # 1. Typeology
 
 ## 1.1. Public inputs
@@ -57,17 +80,22 @@ update_balance
 
 1. build_message
 
-`Uses message data to construct the inputs to the signature verifier (for a given transaction at index i).`
+```
+Uses message data to construct the inputs to the signature verifier (for a given transaction at index i).
+```
 
 2. process_message
 
-`Applies state transitions according to the message data (includes index) -> transactions are processed one-by-one.`
-
-`Will revert should an invalid signature appear.`
+```
+Applies state transitions according to the message data (includes index) -> transactions are processed one-by-one.
+Will revert should an invalid signature appear.
+```
 
 3. update_balance
 
-`returns a new StateMachine with the updated balance infromation.`
+```
+returns a new StateMachine with the updated balance infromation.
+```
 
 ## Message
 
@@ -112,26 +140,3 @@ nargo prove
 cd circuit
 nargo verify
 ```
-
-# ❗ Log of Limitations and Issues
-
-Issues
-```
-⭕ Some binary operations error (e.g. slice.append(slice)) in some cases
-```
-
-Limitations
-```
-❄️ All inputs to the circuit must be of fixed length
-    ❄️ pub_x ✅ 
-    ❄️ pub_y ✅ 
-    ❄️ recipients ✅ 
-    ❄️ signatures ✅ 
-    ❄️ amounts✅ 
-    ❄️ merkle root ✅ 
-    ❄️ balances ❌
-    ❄️ accounts ❌
-accounts => balances 1:1
-```
-❗ The amount of accounts supported by this circuit currently needs to be fixed.
-❗ This is not (yet) suitable for a real-world transaction system.
