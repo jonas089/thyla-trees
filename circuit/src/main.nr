@@ -40,39 +40,12 @@ fn verify_signature(message_hash : [u8;32], pub_key_x : [u8;32], pub_key_y : [u8
     valid_signature
 }
 
-fn main(
-    balances: [u64], 
-    accounts: [[u8]], 
-    merkle_in: [u8], 
-    sender_x: [[u8;32]],
-    sender_y: [[u8;32]],
-    recipient: [[u8]],
-    amount: [[u8]],
-    // each return value as bytes
-    signature: [[u8;64]]) -> pub[[u8]]{
-    // use StateMachine to generate public outputs
-    let state_machine = StateMachine{
-        balances,
-        accounts,
-        merkle_in,
-        sender_x,
-        sender_y,
-        recipient,
-        amount,
-        signature
-    };
-    let message: Message = state_machine.build_message(0);
-    let x: [u8] = [106, 111, 110, 97, 115, 49, 48];
-    state_machine.process_message(message);
-    [[0]]
-}
-
 struct Message{
     index: u8,
-    recipient: [u8],
+    recipient: [u8;32],
     amount: [u8],
     message: [u8],
-    message_hash: [u8; 32]
+    message_hash: [u8;32]
 }
 
 // Rollup state transitions
@@ -81,20 +54,20 @@ struct StateMachine{
     /* Old State */
 
         // list of balances (private)
-        balances: [u64],
+        balances: [u64;2],
         // corresponding accounts b[i] -> a[i] (private)
-        accounts: [[u8]],
+        accounts: [[u8;32];2],
         // input merkle hash (oracle) (public)
         merkle_in: [u8],
 
     /* New Transactions */
 
         // sender x and y coordinates -> use x coordinate as pubkey
-        sender_x: [[u8; 32]],
-        sender_y: [[u8; 32]],
+        sender_x: [[u8;32];1],
+        sender_y: [[u8;32];1],
 
         // recipient hex string -> x coordinate of public key
-        recipient: [[u8]],
+        recipient: [[u8;32];1],
         // amount u64
         amount: [[u8]],
         /* message for sig (oversimplified / missing timestamp):
@@ -112,16 +85,19 @@ impl StateMachine{
         //let x: [[u8]] = [[]];
         let recipient = self.recipient[index];
         let amount = self.amount[index];
-        let message = recipient.append(amount);
+
+        let recipient_slice = recipient.as_slice();
+        let message = recipient_slice.append(amount);
+
         Message{
             index: index,
-            recipient: recipient,
+            recipient: self.recipient[index],
             amount: amount,
             message: message,
             message_hash: hash_sha(message)
         }
     }
-    fn process_message(self, message: Message){
+    fn process_message(&mut self, message: Message){
         // revert if a signature is invalid
 
         assert(
@@ -134,12 +110,104 @@ impl StateMachine{
         );
 
         assert(ascii_to_u64(message.amount) == 10);
-        // apply state transition to balance and merkle
-        // self.balances[recipient] -= 10 
-        // compute new merkle
-        // ...
 
+        let mut i: u8 = 0;
+        // wasteful loop since no 'break' or 'while' supported
+        for a in self.accounts{
+            if(a == message.recipient){
+                //self.balances[i] += ascii_to_u64(message.amount);
+                let amt = self.balances[i];
+                let new_balance: u64 = amt + ascii_to_u64(message.amount);
+                assert(new_balance == 10);
+                let mut new_balances: [u64;2] = [0,0];
+                let mut j: u8 = 0;
+                for b in self.balances{
+                    if j == i{
+                        new_balances[i] == new_balance;
+                    }
+                    else{
+                        new_balances[i] = self.balances[j];
+                    }
+                    j += 1;
+                }
+                assert(new_balances[0] == 0);
+                assert(new_balances[1] == 10);
+                // apply new balances
+                let x: StateMachine = self.update_balance(new_balances);
+            }
+            else{
+                i += 1;
+            };
+            assert(i == 1);
+        }
     }
+    fn update_balance(self, balances: [u64;2]) -> StateMachine{
+        StateMachine{
+            balances: balances,
+            accounts: self.accounts,
+            merkle_in: self.merkle_in,
+            sender_x: self.sender_x,
+            sender_y: self.sender_y,
+            recipient: self.recipient,
+            amount: self.amount,
+            signature: self.signature
+        }
+    }
+}
+
+/*
+
+        // list of balances (private)
+        balances: [u64;2],
+        // corresponding accounts b[i] -> a[i] (private)
+        accounts: [[u8;32];2],
+        // input merkle hash (oracle) (public)
+        merkle_in: [u8],
+
+    /* New Transactions */
+
+        // sender x and y coordinates -> use x coordinate as pubkey
+        sender_x: [[u8;32];1],
+        sender_y: [[u8;32];1],
+
+        // recipient hex string -> x coordinate of public key
+        recipient: [[u8;32];1],
+        // amount u64
+        amount: [[u8]],
+        /* message for sig (oversimplified / missing timestamp):
+            recipient + amount (+ timestamp) -> must in production ensure uniqueness
+
+            * to ensure uniqueness, include nonces in the input balance data.
+        */
+        signature: [[u8;64]]
+
+
+*/
+
+fn main(
+    balances: [u64;2], 
+    accounts: [[u8;32];2], 
+    merkle_in: [u8], 
+    sender_x: [[u8;32];1],
+    sender_y: [[u8;32];1],
+    recipient: [[u8;32];1],
+    amount: [[u8]],
+    // each return value as bytes
+    signature: [[u8;64]]) -> pub[[u8]]{
+    // use StateMachine to generate public outputs
+    let mut state_machine = StateMachine{
+        balances,
+        accounts,
+        merkle_in,
+        sender_x,
+        sender_y,
+        recipient,
+        amount,
+        signature
+    };
+    let message: Message = state_machine.build_message(0);
+    state_machine.process_message(message);
+    [[0]]
 }
 
 
@@ -157,8 +225,8 @@ fn stateMachine(){
     */
     main(
         [10, 0],
-        // this would be hashs fo fixed length e.g. account-hashs / addresses / pubkey o.e.
-        [[76, 195, 113, 207, 31, 191, 143, 106, 36, 227, 255, 61, 28, 142, 167, 76, 31, 82, 16, 250, 167, 114, 101, 243, 133, 87, 115, 12, 12, 19, 26, 177], [76, 195, 113, 207, 31, 191, 143, 106, 36, 227, 255, 61, 28, 142, 167, 76, 31, 82, 16, 250, 167, 114, 101, 243, 133, 87, 115, 12, 12, 19, 26, 178]],
+        // accounts
+        [[76, 195, 113, 207, 31, 191, 143, 106, 36, 227, 255, 61, 28, 142, 167, 76, 31, 82, 16, 250, 167, 114, 101, 243, 133, 87, 115, 12, 12, 19, 26, 177], [57, 141, 121, 60, 115, 189, 115, 103, 174, 6, 108, 20, 114, 134, 156, 80, 7, 222, 7, 107, 196, 2, 216, 251, 119, 174, 151, 31, 19, 46, 39, 92]],
         // merkle hash (anything)
         [123, 123],
         // x-coordinate
@@ -179,7 +247,7 @@ fn stateMachine(){
 }
     
     
-    
+
 #[test]
 fn signatures() {
     // Test Signature
@@ -191,4 +259,3 @@ fn signatures() {
     );
     assert(is_valid);
 }
-    
