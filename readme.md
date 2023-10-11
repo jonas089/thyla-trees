@@ -27,7 +27,8 @@ Limitations
 accounts => balances 1:1
 ```
 ❗ The amount of accounts supported by this circuit currently needs to be fixed.
-❗ This is not (yet) suitable for a real-world transaction system.
+
+❗ This is not suitable for a real-world transaction system.
 
 # 1. Typeology
 
