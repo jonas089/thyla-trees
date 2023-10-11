@@ -61,7 +61,7 @@ Uses message data to construct the inputs to the signature verifier (for a given
 
 2. process_message
 
-Applies state transitions according to the message data (includes index) -> transactions are processed one-by-one.
+Applies state transitions according to the message data (includes index) -> transactions are processed one-by-one. Will revert should an invalid signature appear.
 
 3. update_balance
 
