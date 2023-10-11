@@ -45,7 +45,7 @@ Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/circuit/src/m
 
 ## StateMachine (reactor)
 
-Represents all state (public and private inputs)
+Represents state (public and private inputs)
 
 Methods:
 
@@ -68,6 +68,18 @@ update_balance
 3. update_balance
 
 `returns a new StateMachine with the updated balance infromation.`
+
+## Message
+
+Represents a transaction
+
+```Rust
+    index: u8,
+    recipient: [u8;32],
+    amount: [u8;2],
+    message: [u8],
+    message_hash: [u8;32]
+```
 
 # Use with Nargo client
 
@@ -101,4 +113,25 @@ cd circuit
 nargo verify
 ```
 
+# ❗ Log of Limitations and Issues
 
+Issues
+```
+⭕ Some binary operations error (e.g. slice.append(slice)) in some cases
+```
+
+Limitations
+```
+❄️ All inputs to the circuit must be of fixed length
+    ❄️ pub_x ✅ 
+    ❄️ pub_y ✅ 
+    ❄️ recipients ✅ 
+    ❄️ signatures ✅ 
+    ❄️ amounts✅ 
+    ❄️ merkle root ✅ 
+    ❄️ balances ❌
+    ❄️ accounts ❌
+accounts => balances 1:1
+```
+❗ The amount of accounts supported by this circuit currently needs to be fixed.
+❗ This is not (yet) suitable for a real-world transaction system.
