@@ -20,3 +20,13 @@ Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/sig_verifier/
     amount: [[u8]],
 ```
 
+# CMD
+
+Run tests
+
+```bash
+cd circuit
+nargo test
+```
+
+

@@ -13,7 +13,7 @@ fn hash_sha(message: [u8]) -> [u8; 32]{
     std::hash::sha256(message)
 }
 
-fn ascii_to_u64(arr: [u8]) -> u64 {
+fn ascii_to_u64(arr: [u8;2]) -> u64 {
     let mut result: u64 = 0;
     let mut multiplier: u64 = 1;
     let len = arr.len();
@@ -43,7 +43,7 @@ fn verify_signature(message_hash : [u8;32], pub_key_x : [u8;32], pub_key_y : [u8
 struct Message{
     index: u8,
     recipient: [u8;32],
-    amount: [u8],
+    amount: [u8;2],
     message: [u8],
     message_hash: [u8;32]
 }
@@ -52,43 +52,40 @@ struct Message{
 struct StateMachine{
 
     /* Old State */
-
-        // list of balances (private)
         balances: [u64;2],
-        // corresponding accounts b[i] -> a[i] (private)
         accounts: [[u8;32];2],
-        // input merkle hash (oracle) (public)
-        merkle_in: [u8],
+        merkle_in: [u8;2],
 
     /* New Transactions */
 
         // sender x and y coordinates -> use x coordinate as pubkey
         sender_x: [[u8;32];1],
         sender_y: [[u8;32];1],
-
         // recipient hex string -> x coordinate of public key
         recipient: [[u8;32];1],
         // amount u64
-        amount: [[u8]],
+        amount: [[u8;2];1],
         /* message for sig (oversimplified / missing timestamp):
             recipient + amount (+ timestamp) -> must in production ensure uniqueness
-
             * to ensure uniqueness, include nonces in the input balance data.
         */
-        signature: [[u8;64]]
+        signature: [[u8;64];1]
 
     // tbd: public output? -> main return values? -> figure out when tests pass
 }
 
 impl StateMachine{
     fn build_message(self, index: u8) -> Message{
-        //let x: [[u8]] = [[]];
         let recipient = self.recipient[index];
         let amount = self.amount[index];
 
-        let recipient_slice = recipient.as_slice();
-        let message = recipient_slice.append(amount);
-
+        let recipient_slice: [u8] = recipient.as_slice();
+        let amount_slice: [u8] = amount.as_slice();
+        let mut message: [u8] = recipient.as_slice();
+        for byte in amount{
+            message = message.push_back(byte);
+        }
+        //message.append(amount_slice);
         Message{
             index: index,
             recipient: self.recipient[index],
@@ -109,11 +106,16 @@ impl StateMachine{
             )
         );
 
-        assert(ascii_to_u64(message.amount) == 10);
+        //assert(ascii_to_u64(message.amount) == 10);
+        let fixed_bytes: [u8;2] = [49, 48];
+        let x = ascii_to_u64(fixed_bytes);
+        assert(x == 10);
+        
 
         let mut i: u8 = 0;
         // wasteful loop since no 'break' or 'while' supported
         for a in self.accounts{
+            /*
             if(a == message.recipient){
                 //self.balances[i] += ascii_to_u64(message.amount);
                 let amt = self.balances[i];
@@ -138,7 +140,7 @@ impl StateMachine{
             else{
                 i += 1;
             };
-            assert(i == 1);
+            assert(i == 1);*/
         }
     }
     fn update_balance(self, balances: [u64;2]) -> StateMachine{
@@ -155,45 +157,16 @@ impl StateMachine{
     }
 }
 
-/*
-
-        // list of balances (private)
-        balances: [u64;2],
-        // corresponding accounts b[i] -> a[i] (private)
-        accounts: [[u8;32];2],
-        // input merkle hash (oracle) (public)
-        merkle_in: [u8],
-
-    /* New Transactions */
-
-        // sender x and y coordinates -> use x coordinate as pubkey
-        sender_x: [[u8;32];1],
-        sender_y: [[u8;32];1],
-
-        // recipient hex string -> x coordinate of public key
-        recipient: [[u8;32];1],
-        // amount u64
-        amount: [[u8]],
-        /* message for sig (oversimplified / missing timestamp):
-            recipient + amount (+ timestamp) -> must in production ensure uniqueness
-
-            * to ensure uniqueness, include nonces in the input balance data.
-        */
-        signature: [[u8;64]]
-
-
-*/
-
 fn main(
     balances: [u64;2], 
     accounts: [[u8;32];2], 
-    merkle_in: [u8], 
+    merkle_in: [u8;2], 
     sender_x: [[u8;32];1],
     sender_y: [[u8;32];1],
     recipient: [[u8;32];1],
-    amount: [[u8]],
+    amount: [[u8;2];1],
     // each return value as bytes
-    signature: [[u8;64]]) -> pub[[u8]]{
+    signature: [[u8;64];1]) -> pub[[u8;1]]{
     // use StateMachine to generate public outputs
     let mut state_machine = StateMachine{
         balances,
