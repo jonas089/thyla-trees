@@ -48,7 +48,7 @@ impl StateMachine{
             message_hash: hash_sha(message)
         }
     }
-    fn process_message(&mut self, message: Message){
+    fn process_message(&mut self, message: Message) -> [u64;2]{
         // revert if a signature is invalid
 
         assert(
@@ -64,12 +64,9 @@ impl StateMachine{
         let fixed_bytes: [u8;2] = [49, 48];
         let x = ascii_to_u64(fixed_bytes);
         assert(x == 10);
-        
-
         let mut i: u8 = 0;
-        // wasteful loop since no 'break' or 'while' supported
+        let mut new_balances: [u64; 2] = [0,0];
         for a in self.accounts{
-            let mut new_balances: [u64; 2] = [0,0];
             let mut i: u8 = 0;
             for account in self.accounts{
                 if account == message.recipient{
@@ -85,10 +82,12 @@ impl StateMachine{
             };
             assert(new_balances[0] == 0);
             assert(new_balances[1] == 10);
-            let x: StateMachine = self.update_balance(new_balances);
-        }
+            //let new_state: StateMachine = self.update_balance(new_balances);
+        };
+        new_balances
     }
     fn update_balance(self, balances: [u64;2]) -> StateMachine{
+        // return new state machine with updated balance
         StateMachine{
             balances: balances,
             accounts: self.accounts,

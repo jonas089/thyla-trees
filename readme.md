@@ -18,6 +18,11 @@ Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/circuit/src/m
 
 ## 1.2. Private inputs
 
+
+<div style="background-color:#ffe5e5; padding:15px; border-radius:5px; border:1px solid red;">
+    <strong>Warning:</strong> For development and testing some data types are temporarily changed.
+</div>
+
 ```Rust
     sender_x: [[u8;32];n],
     sender_y: [[u8;32];n],
@@ -36,6 +41,10 @@ Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/circuit/src/m
             * [[T;n];n] or [[[T;n];n];n]
     */
 ```
+
+## 2. Structs
+
+## State machine
 
 # Use with Nargo client
 
