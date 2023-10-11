@@ -57,15 +57,15 @@ update_balance
 
 1. build_message
 
-Uses message data to construct the inputs to the signature verifier (for a given transaction at index i).
+`Uses message data to construct the inputs to the signature verifier (for a given transaction at index i).`
 
 2. process_message
 
-Applies state transitions according to the message data (includes index) -> transactions are processed one-by-one. Will revert should an invalid signature appear.
+`Applies state transitions according to the message data (includes index) -> transactions are processed one-by-one. Will revert should an invalid signature appear.`
 
 3. update_balance
 
-returns a new StateMachine with the updated balance infromation.
+`returns a new StateMachine with the updated balance infromation.`
 
 # Use with Nargo client
 
