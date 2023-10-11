@@ -22,11 +22,34 @@ Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/sig_verifier/
 
 # CMD
 
-Run tests
+0. Run tests
 
 ```bash
 cd circuit
 nargo test
+```
+
+1. Build the circuit
+
+```bash
+cd circuit
+nargo check
+```
+
+2. Provide circuit Inputs -> edit Prover.toml
+
+3. Generate a proof
+
+```bash
+cd circuit
+nargo prove
+```
+
+4. verify a proof
+
+```bash
+cd circuit
+nargo verify
 ```
 
 
