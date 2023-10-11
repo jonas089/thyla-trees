@@ -35,7 +35,7 @@ class SECP256k1:
         data = self.load()
         private_key = data["private_key"]
         # hash the message and sign the hash
-        message_hash = hashlib.sha256(message.encode('utf-8')).hexdigest()
+        message_hash = hashlib.sha256(message).hexdigest()
         message_bytes = bytes.fromhex(message_hash)
         signature = private_key.sign_deterministic(
             message_bytes, 
@@ -54,7 +54,7 @@ class SECP256k1:
         keys = self.load()
         print("X coordinate: ", keys["public_key_x"])
         print("Y coordinate: ", keys["public_key_y"])
-        print("Hex Public: ", keys["public_key_hex"])
+        #print("Hex Public: ", keys["public_key_hex"])
 '''
 # Generate a random private key
 private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
@@ -88,30 +88,28 @@ print("y_coordinate: ", y_coordinate_bytes)
 print("signature: ", list(bytes.fromhex(signature.hex())))
 '''
 
-if not os.path.exists(DEFAULT_TARGET):
-    open(DEFAULT_TARGET, 'x')
+# if not os.path.exists(DEFAULT_TARGET):
+#    open(DEFAULT_TARGET, 'x')
 secp = SECP256k1()
 # create new keypair and save at DEFAULT_TARGET
-secp.store(secp.new())
+# secp.store(secp.new())
 # sign an oversimplified transaction
 recipient = list("jonas".encode('utf-8'))
 amount = list("10".encode('utf-8'))
-print(recipient)
-print(amount)
 message_combined = recipient + amount
 print("Message_Bytes: ", message_combined)
 
 recipient = [57, 141, 121, 60, 115, 189, 115, 103, 174, 6, 108, 20, 114, 134, 156, 80, 7, 222, 7, 107, 196, 2, 216, 251, 119, 174, 151, 31, 19, 46, 39, 92]
-recipient_hex = bytes(recipient).hex()
+recipient_bytes = bytes(recipient)
 
-x = recipient_hex + "10"
-print(x)
+x = recipient_bytes + bytes("10".encode('utf-8'))
 secp.sign_and_print(x)
 
 
-print("Message part1 bytes:", list(recipient_hex.encode('utf-8')))
+print("Message part1 bytes:", list(recipient_bytes))
 print("Message part2 bytes:", list("10".encode('utf-8')))
 
+print(x)
 # Output:
 '''
 Message:  [223, 188, 58, 84, 128, 209, 132, 159, 182, 174, 107, 205, 234, 148, 208, 98, 10, 244, 95, 54, 104, 102, 222, 247, 5, 178, 215, 155, 140, 244, 23, 221]
