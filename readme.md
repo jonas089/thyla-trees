@@ -19,3 +19,4 @@ Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/sig_verifier/
     recipient: [[u8;32];n],
     amount: [[u8]],
 ```
+
