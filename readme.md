@@ -62,6 +62,7 @@ update_balance
 2. process_message
 
 `Applies state transitions according to the message data (includes index) -> transactions are processed one-by-one.`
+
 `Will revert should an invalid signature appear.`
 
 3. update_balance
