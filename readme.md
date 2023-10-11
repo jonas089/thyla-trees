@@ -43,7 +43,29 @@ Circuit [here](https://github.com/jonas089/noir-rollup/blob/master/circuit/src/m
 
 ## 2. Structs
 
-## State machine
+## StateMachine (reactor)
+
+Represents all state (public and private inputs)
+
+Methods:
+
+```Rust
+build_message
+process_message
+update_balance
+```
+
+1. build_message
+
+Uses message data to construct the inputs to the signature verifier (for a given transaction at index i).
+
+2. process_message
+
+Applies state transitions according to the message data (includes index) -> transactions are processed one-by-one.
+
+3. update_balance
+
+returns a new StateMachine with the updated balance infromation.
 
 # Use with Nargo client
 

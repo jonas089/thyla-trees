@@ -87,7 +87,7 @@ impl StateMachine{
         new_balances
     }
     fn update_balance(self, balances: [u64;2]) -> StateMachine{
-        // return new state machine with updated balance
+        // return new state machine with new_balances
         StateMachine{
             balances: balances,
             accounts: self.accounts,
