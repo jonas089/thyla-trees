@@ -10,7 +10,7 @@ Circuit [here](https://github.com/jonas089/noir-rollup/tree/master/circuit/src)
 
 Issues
 ```
-⭕ Some binary operations error (e.g. slice.append(slice)) in some cases
+⭕ Some operations error (e.g. slice.append(slice)) in some cases
 ```
 
 Limitations
