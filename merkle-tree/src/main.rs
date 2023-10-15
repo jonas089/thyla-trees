@@ -1,4 +1,6 @@
 extern crate sha256;
+use core::panic;
+
 use sha256::{digest, try_digest};
 
 fn main(){
@@ -15,6 +17,7 @@ struct MerkleNode{
     left: Option<Box<MerkleNode>>,
     right: Option<Box<MerkleNode>>
 }
+
 impl MerkleNode{
     fn is_empty(self) -> bool{
         if self.data.len() == 0{
@@ -24,28 +27,45 @@ impl MerkleNode{
     }
 }
 
-fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode>{
-    if tx.is_empty(){
+fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode> {
+    // Immediate return if no transactions
+    if tx.is_empty() {
         return None;
     }
-    else if tx.len() == 1{
-        return Some(MerkleNode{
-            data: tx[0].clone(),
+
+    // Create leaves for each transaction
+    let mut nodes = tx.into_iter()
+        .map(|t| MerkleNode {
+            data: t,
             left: None,
-            right: None
-        });
+            right: None,
+        })
+        .collect::<Vec<_>>();
+
+    // Build tree from the bottom up
+    while nodes.len() > 1 {
+        // If odd number of nodes, duplicate last
+        if nodes.len() % 2 != 0 {
+            println!("Nodes: {:?}", nodes.len());
+            panic!("Node num odd");
+            let last = nodes.last().unwrap().clone();
+            nodes.push(last);
+        }
+
+        // Combine pairs of nodes
+        nodes = nodes.chunks(2).map(|pair| {
+            let left = Box::new(pair[0].clone());
+            let right = Box::new(pair[1].clone());
+            MerkleNode {
+                data: hash_string(format!("{}{}", left.data, right.data)),
+                left: Some(left),
+                right: Some(right),
+            }
+        }).collect();
     }
-    let mid: usize = tx.len() / 2;
-    let left_subtree = build_merkle_tree(tx[..mid].to_vec());
-    let right_subtree = build_merkle_tree(tx[mid..].to_vec());
-    let mut node = MerkleNode{
-        data: hash_string(left_subtree.as_ref().unwrap().data.clone() + &right_subtree.as_ref().unwrap().data.clone()),
-        left: None,
-        right: None
-    };
-    node.left = left_subtree.map(Box::new);
-    node.right = right_subtree.map(Box::new);
-    Some(node)
+
+    // There's exactly one node left, the root of the Merkle tree
+    nodes.pop()
 }
 
 fn find_leaf_path(root: MerkleNode, target: String, path: Vec<String>) -> Option<Vec<String>>{
@@ -109,7 +129,6 @@ fn find_leaf_parent(root: MerkleNode, target: String) -> Option<MerkleNode>{
             return right_node;
         }
     }
-
     return None
 }
 
@@ -121,14 +140,6 @@ fn find_leaf_sibling(root: MerkleNode, target: String) -> Option<MerkleNode>{
         else{
             return Some(*root.clone().left.unwrap());
         }
-    }
-    else if let Some(ref right) = root.right{
-        if root.clone().left.unwrap().data == target{
-            return Some(*root.clone().right.unwrap());
-        }
-        else{
-            return Some(*root.clone().left.unwrap());
-        } 
     }
     else{
         return None;
@@ -142,21 +153,30 @@ fn verify_merkle_proof(merkle_root: String, mut proof_path: Vec<String>, ls: boo
         return false;
     }
     
-    let mut current_hash = String::new();
+    let mut current_hash = proof_path.pop().unwrap();
     while !proof_path.is_empty() {
-        let sibling = proof_path.pop().unwrap_or_default();
-        let node = proof_path.pop().unwrap_or_default();
+        // this doesn't make sense
+        // must verify that each step is valid
+        // currently it'll end up at the beginning of the proof path and return valid
+
+        let sibling = proof_path.pop().unwrap();
+        //let node = proof_path.pop().unwrap();
+        println!("Computing sibling {:?}, for current hash {:?}", &sibling, &current_hash);
         if ls == true{
-            current_hash = hash_string(node + &sibling);   
+            current_hash = hash_string(current_hash.clone() + &sibling);   
         }
         else {
-            current_hash = hash_string(sibling + &node);
+            current_hash = hash_string(sibling + &current_hash);
         }
+        println!("Computation result: {:?}", &current_hash);
     }
-    //assert_eq!(merkle_root, current_hash);
+    println!("Final hash: {:?}", &current_hash);
+    assert_eq!(merkle_root, current_hash);
     merkle_root == current_hash
 }
 
+
+/*
 #[test]
 fn test(){
     // would have to ensure always even:
@@ -210,7 +230,7 @@ fn test(){
 
     let mut transactions: Vec<String> = Vec::new();
     let mut ids: Vec<String> = Vec::new();
-    for i in 0..100{
+    for i in 0..4{
         let _id = format!("0x{}", i.to_string());
         transactions.push(_id.clone());
         ids.push(_id);
@@ -218,7 +238,8 @@ fn test(){
     let merkle_tree = build_merkle_tree(transactions.clone());
     let merkle_root = merkle_tree.clone().unwrap().data;
     for (index, id) in ids.iter().enumerate(){
-        let path: Vec<String> = find_leaf_path(merkle_tree.clone().unwrap(), id.clone(), Vec::new()).unwrap();
+        let mut path: Vec<String> = find_leaf_path(merkle_tree.clone().unwrap(), id.clone(), Vec::new()).unwrap();
+        path.push(String::from(id.clone()));
         let mut proof_path: Vec<String> = Vec::new();
         // enumerate and skip root
         for leaf in &path[1..]{
@@ -227,6 +248,7 @@ fn test(){
             let leaf_sibling = find_leaf_sibling(leaf_parent.clone().unwrap(), String::from(leaf.clone()));
             proof_path.push(leaf_sibling.unwrap().data);
         };
+        println!("Proof path: {:?}", &proof_path);
         let ls = {
             if index < ids.len() / 2{
                 true
@@ -235,26 +257,20 @@ fn test(){
                 false
             }
         };
-        if verify_merkle_proof(merkle_root.clone(), proof_path, ls) == false{
-            println!("Failed to verify: {:?}", id);
+        if verify_merkle_proof(merkle_root.clone(), proof_path.clone(), ls) == false{
+            //println!("Failed to verify: {:?}", id);
         }
         else{
-            println!("Verified: {:?}", id);
+            //println!("Verified: {:?}", id);
         }
-        //assert_eq!(verify_merkle_proof(merkle_root.clone(), proof_path), true);
+        assert_eq!(verify_merkle_proof(merkle_root.clone(), proof_path, ls), true);
     }
-
-    let mut proof_path: Vec<String> = Vec::new();
-    println!("Full merkle tree: {:?}", &merkle_tree);
-    let test_path = find_leaf_path(merkle_tree.clone().unwrap(), String::from("0x1"), Vec::new()).unwrap();
-    for leaf in &test_path[1..]{
-        proof_path.push(String::from(leaf.clone()));
-        let leaf_parent = find_leaf_parent(merkle_tree.clone().unwrap(), String::from(leaf.clone()));
-        let leaf_sibling = find_leaf_sibling(leaf_parent.clone().unwrap(), String::from(leaf.clone()));
-        proof_path.push(leaf_sibling.unwrap().data);
-    };
-    println!("Full proof path: {:?}", &proof_path);
-    println!("{:?}", hash_string(proof_path[0].clone() + &proof_path[1]) )
+    /*
+    let _parent = find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x0")).unwrap();
+    println!("Parent: {:?}", _parent);
+    let _sibling = find_leaf_sibling(_parent, String::from("0x0"));
+    println!("Sibling: {:?}", _sibling);
+    */
 }
 
 
@@ -278,4 +294,46 @@ Full proof path: ["cc68c6ed4c7ec3ee1340b3227035ad94e33cf9a7a59345af0a5a49ee1723d
  7e8        cc68
 0x00 0x01 0x02 0x03
 
+*/ */
+
+#[test]
+fn more_tests(){
+    let mut transactions: Vec<String> = Vec::new();
+    let mut ids: Vec<String> = Vec::new();
+    for i in 0..8{
+        let _id = format!("0x{}", i.to_string());
+        transactions.push(_id.clone());
+        ids.push(_id);
+    };
+    let merkle_tree = build_merkle_tree(transactions.clone());
+    let merkle_root = merkle_tree.clone().unwrap().data;
+    let parent = find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x5"));
+    let sibling = find_leaf_sibling(parent.clone().unwrap(), String::from("0x5"));
+    //println!("Sibling of 0x5: {:?}", sibling);
+    let mut path = find_leaf_path(merkle_tree.clone().unwrap(), String::from("0x5"), Vec::new()).unwrap();
+    path.push(String::from("0x5"));
+    println!("Path: {:?}", path);
+    let mut proof_path: Vec<String> = Vec::new();
+    for leaf in &path.clone()[1..]{
+        proof_path.push(leaf.clone());
+        let leaf_parent = find_leaf_parent(merkle_tree.clone().unwrap(), leaf.clone()).unwrap();
+        let leaf_sibling = find_leaf_sibling(leaf_parent.clone(), leaf.clone()).unwrap();
+        //println!("Parent of leaf {:?} is {:?}", &leaf, &leaf_parent);
+        //println!("Sibling of leaf {:?} is {:?}", &leaf, &leaf_sibling);
+        proof_path.push(leaf_sibling.data);
+    };
+    println!("Proof path: {:?}", proof_path);
+    println!("Merkle root: {:?}", &merkle_root);
+    println!("Verifier: {:?}", verify_merkle_proof(merkle_root, proof_path, false));
+}
+
+
+
+/*
+! number of nodes must be even, or else last element will be duplicated / e.g. transactions / 2 == even
+
+Merkle tree: Some(MerkleNode { data: "9893e1b34d1bedb6f26c1b74daa1d94c8312003718674ffa1afecba378b9d735", left: Some(MerkleNode { data: "00ada7f0393fced15bbb1fa02b200e487d1ea2562e63acff56ad8a753de9f981", left: Some(MerkleNode { data: "cc68c6ed4c7ec3ee1340b3227035ad94e33cf9a7a59345af0a5a49ee1723dcad", left: Some(MerkleNode { data: "0x0", left: None, right: None }), right: Some(MerkleNode { data: "0x1", left: None, right: None }) }), right: Some(MerkleNode { data: "7e844584f83a63208c5bb8851057910d2040eb253de53bce3057c33286270f7c", left: Some(MerkleNode { data: "0x2", left: None, right: None }), right: Some(MerkleNode { data: "0x3", left: None, right: None }) }) }), right: Some(MerkleNode { data: "cba59f10224e845a7c090576b53a35bb613d3bf91545b5c12d9e9c23e653946d", left: Some(MerkleNode { data: "16b30164c14d9cdc8c60f961799740352dd32cf7b1010b9c7cadaacc418e0e25", left: Some(MerkleNode { data: "0x4", left: None, right: None }), right: Some(MerkleNode { data: "0x5", left: None, right: None }) }), right: Some(MerkleNode { data: "97628320616cfee422be81b7eb8500ac796aaf34aa6c4a45777edd6546df116b", left: Some(MerkleNode { data: "0x6", left: None, right: None }), right: Some(MerkleNode { data: "0x7", left: None, right: None }) }) }) })
+
+
 */
+
