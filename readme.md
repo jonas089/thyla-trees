@@ -18,17 +18,30 @@ For that every transaction's merkle path and the merkle root are required.
 
 Experimental merkle tree [code](https://github.com/jonas089/noir-rollup/blob/master/merkle-tree/src/main.rs)
 
-# Heavy / manual implementation
+❗ How is output state proven / how are balances calculated?
 
-Problems when taking all transactions as input:
+
+# Suboptimal implementation
+
+```
+Circuit takes all new transaction data and accounting state
+as input. Constraint system does not support dynamic datatypes.
+Therefore it's not feasible to implement a circuit for a
+growing database of accounts.
+
+Prove inclusion in a merkle tree instead.
+```
+
+suboptimal [code](https://github.com/jonas089/noir-rollup/tree/master/circuits/experiments)
+
+Problems when taking all transactions and state as input:
 ```
 ❄️ All inputs to the circuit must be of fixed length
     ❄️ pub_x ✅ 
     ❄️ pub_y ✅ 
     ❄️ recipients ✅ 
     ❄️ signatures ✅ 
-    ❄️ amounts✅ 
-    ❄️ merkle root ✅ 
+    ❄️ amounts✅  
     ❄️ balances ❌
     ❄️ accounts ❌
 accounts => balances 1:1
@@ -45,8 +58,7 @@ accounts => balances 1:1
 
 ```Rust
     balances: [u64;n], 
-    accounts: [[u8;32];n], 
-    merkle_in: [u8;32], 
+    accounts: [[u8;32];n]
 ```
 
 ## 1.2. Private inputs
