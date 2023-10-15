@@ -6,14 +6,14 @@ The purpose of this repo is to explore potential zk rollup implementations in no
 
 Circuit [here](https://github.com/jonas089/noir-rollup/tree/master/circuit/src)
 
-# ❗ Log of Limitations and Issues
+Merkle path proof design:
 
-Issues
 ```
-⭕ Some operations error (e.g. slice.append(slice)) in some cases
+Merkle path consists of nodes and sibling nodes for each transaction.
 ```
 
-Limitations
+
+Problems when taking all transactions as input:
 ```
 ❄️ All inputs to the circuit must be of fixed length
     ❄️ pub_x ✅ 
@@ -29,6 +29,8 @@ accounts => balances 1:1
 ❗ The amount of accounts supported by this circuit currently needs to be fixed.
 
 ❗ This is not suitable for a real-world transaction system.
+
+
 
 # 1. Typeology
 
