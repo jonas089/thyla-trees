@@ -136,14 +136,13 @@ Represents a transaction
 0. Run tests
 
 ```bash
-cd circuit
+cd circuits/experiments
 nargo test
 ```
 
 1. Build the circuit
 
 ```bash
-cd circuit
 nargo check
 ```
 
@@ -152,13 +151,12 @@ nargo check
 3. Generate a proof
 
 ```bash
-cd circuit
 nargo prove
 ```
 
 4. verify a proof
 
 ```bash
-cd circuit
+
 nargo verify
 ```
