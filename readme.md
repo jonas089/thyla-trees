@@ -6,6 +6,8 @@ The purpose of this repo is to explore potential zk rollup implementations in no
 
 Circuit [here](https://github.com/jonas089/noir-rollup/tree/master/circuit/src)
 
+# Slick implementation
+
 Merkle path proof design:
 
 ```
@@ -14,6 +16,9 @@ Proof is generated for each transaction's inclusion in the merkle tree.
 For that every transaction's merkle path and the merkle root are required.
 ```
 
+Experimental merkle tree [code](https://github.com/jonas089/noir-rollup/blob/master/merkle-tree/src/main.rs)
+
+# Heavy / manual implementation
 
 Problems when taking all transactions as input:
 ```
