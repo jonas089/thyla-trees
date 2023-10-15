@@ -132,7 +132,7 @@ fn test(){
     assert_eq!(hash_string(String::from("hello")), String::from("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"));
     // would have to ensure always even:
     // if tx.len() % 0 != 0 => tx.append(tx[tx.len()])
-    let transactions = vec![String::from("0x00"), String::from("0x01"), String::from("0x02"), String::from("0x03")];
+    let transactions = vec![String::from("0x00"), String::from("0x01"), String::from("0x02"), String::from("0x03"), String::from("0x04"), String::from("0x05"), String::from("0x06"), String::from("0x07")];
     let merkle_tree = build_merkle_tree(transactions);
     println!("{:?}", merkle_tree);
 
@@ -142,10 +142,8 @@ fn test(){
     println!("0x00: {:?}", tx_path_0x00);
 
     println!("{:?}", find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x02")));
-    assert_eq!(merkle_tree.clone().unwrap().data, hash_string(tx_path_0x00.unwrap()[1].clone() + &tx_path_0x02.unwrap()[1]));
 
     // test sibling matcher
-
     let parent_0x00 = find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x00"));
     let parent_0x02 = find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x02"));
     let sibling_0x00 = find_leaf_sibling(parent_0x00.unwrap(), String::from("0x00")).unwrap();
@@ -154,4 +152,20 @@ fn test(){
     println!("Sibling 0x00: {:?}", sibling_0x00);
     println!("Sibling 0x02: {:?}", sibling_0x02);
 
+    // try to prove a transaction's inclusion
+    let merkle_root = String::from("7fecc42e1d62c53d6fe0cb9d35a66fef81be9d9c137d7e6808744d71d2730055");
+    let id: String = String::from("0x00");
+    let path: Vec<String> = find_leaf_path(merkle_tree.clone().unwrap(), id, Vec::new()).unwrap();
+    let mut proof_path: Vec<String> = Vec::new();
+    // enumerate and skip root
+    for leaf in &path[1..]{
+        proof_path.push(String::from(leaf.clone()));
+        let leaf_parent = find_leaf_parent(merkle_tree.clone().unwrap(), String::from(leaf.clone()));
+        let leaf_sibling = find_leaf_sibling(leaf_parent.clone().unwrap(), String::from(leaf.clone()));
+        proof_path.push(leaf_sibling.unwrap().data);
+    }
+    println!("Proof path: {:?}", proof_path);
+    assert_eq!(hash_string(proof_path[2].clone() + &proof_path[3]), proof_path[0]);
+    assert_eq!(hash_string(proof_path[0].clone() + &proof_path[1]), merkle_root);
+    //println!("{:?}", hash_string(proof_path[2].clone() + &proof_path[3]));
 }
