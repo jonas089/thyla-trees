@@ -10,6 +10,8 @@ Merkle path proof design:
 
 ```
 Merkle path consists of nodes and sibling nodes for each transaction.
+Proof is generated for each transaction's inclusion in the merkle tree.
+For that every transaction's merkle path and the merkle root are required.
 ```
 
 
