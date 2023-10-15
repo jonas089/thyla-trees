@@ -78,7 +78,7 @@ fn find_leaf_path(root: MerkleNode, target: String, path: Vec<String>) -> Option
     return None;
 }
 
-fn find_parent(root: MerkleNode, target: String) -> Option<MerkleNode>{
+fn find_leaf_parent(root: MerkleNode, target: String) -> Option<MerkleNode>{
     // check if target in children
     if let Some(ref left) = root.left{
         if root.clone().left.unwrap().data == target{
@@ -97,20 +97,34 @@ fn find_parent(root: MerkleNode, target: String) -> Option<MerkleNode>{
     };
     */
     if let Some(ref left) = root.left{
-        let left_node = find_parent(*root.clone().left.unwrap(), target.clone());
+        let left_node = find_leaf_parent(*root.clone().left.unwrap(), target.clone());
         if !left_node.is_none(){
             return  left_node;
         }
     }
 
     if let Some(ref right) = root.right{
-        let right_node = find_parent(*root.clone().right.unwrap(), target.clone());
+        let right_node = find_leaf_parent(*root.clone().right.unwrap(), target.clone());
         if !right_node.is_none(){
             return right_node;
         }
     }
 
     return None
+}
+
+fn find_leaf_sibling(root: MerkleNode, target: String) -> Option<MerkleNode>{
+    if let Some(ref left) = root.left{
+        if root.clone().left.unwrap().data == target{
+            return Some(*root.clone().right.unwrap());
+        }
+        else{
+            return Some(*root.clone().left.unwrap());
+        }
+    }
+    else{
+        return None;
+    }
 }
 
 #[test]
@@ -127,7 +141,17 @@ fn test(){
     println!("0x02: {:?}", tx_path_0x02);
     println!("0x00: {:?}", tx_path_0x00);
 
-    println!("{:?}", find_parent(merkle_tree.clone().unwrap(), String::from("0x02")));
+    println!("{:?}", find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x02")));
+    assert_eq!(merkle_tree.clone().unwrap().data, hash_string(tx_path_0x00.unwrap()[1].clone() + &tx_path_0x02.unwrap()[1]));
 
-    assert_eq!(merkle_tree.unwrap().data, hash_string(tx_path_0x00.unwrap()[1].clone() + &tx_path_0x02.unwrap()[1]));
+    // test sibling matcher
+
+    let parent_0x00 = find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x00"));
+    let parent_0x02 = find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x02"));
+    let sibling_0x00 = find_leaf_sibling(parent_0x00.unwrap(), String::from("0x00")).unwrap();
+    let sibling_0x02 = find_leaf_sibling(parent_0x02.unwrap(), String::from("0x02")).unwrap();
+
+    println!("Sibling 0x00: {:?}", sibling_0x00);
+    println!("Sibling 0x02: {:?}", sibling_0x02);
+
 }
