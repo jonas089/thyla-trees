@@ -135,7 +135,7 @@ fn find_leaf_sibling(root: MerkleNode, target: String) -> Option<MerkleNode>{
     }
 }
 
-fn verify_merkle_proof(merkle_root: String, mut proof_path: Vec<String>) -> bool {
+fn verify_merkle_proof(merkle_root: String, mut proof_path: Vec<String>, ls: bool) -> bool {
     // Ensure the proof_path has an even number of elements
     if proof_path.len() % 2 != 0 {
         panic!("Proof path is not even!");
@@ -146,12 +146,17 @@ fn verify_merkle_proof(merkle_root: String, mut proof_path: Vec<String>) -> bool
     while !proof_path.is_empty() {
         let sibling = proof_path.pop().unwrap_or_default();
         let node = proof_path.pop().unwrap_or_default();
-        //println!("[DEBUG] Hashing: {:?}", (node.clone() + &sibling));
-        current_hash = hash_string(node + &sibling);
+        if ls == true{
+            current_hash = hash_string(node + &sibling);   
+        }
+        else {
+            current_hash = hash_string(sibling + &node);
+        }
     }
     //assert_eq!(merkle_root, current_hash);
     merkle_root == current_hash
 }
+
 #[test]
 fn test(){
     // would have to ensure always even:
@@ -205,14 +210,14 @@ fn test(){
 
     let mut transactions: Vec<String> = Vec::new();
     let mut ids: Vec<String> = Vec::new();
-    for i in 0..4{
+    for i in 0..100{
         let _id = format!("0x{}", i.to_string());
         transactions.push(_id.clone());
         ids.push(_id);
     }
     let merkle_tree = build_merkle_tree(transactions.clone());
     let merkle_root = merkle_tree.clone().unwrap().data;
-    for id in ids{
+    for (index, id) in ids.iter().enumerate(){
         let path: Vec<String> = find_leaf_path(merkle_tree.clone().unwrap(), id.clone(), Vec::new()).unwrap();
         let mut proof_path: Vec<String> = Vec::new();
         // enumerate and skip root
@@ -222,7 +227,15 @@ fn test(){
             let leaf_sibling = find_leaf_sibling(leaf_parent.clone().unwrap(), String::from(leaf.clone()));
             proof_path.push(leaf_sibling.unwrap().data);
         };
-        if verify_merkle_proof(merkle_root.clone(), proof_path) == false{
+        let ls = {
+            if index < ids.len() / 2{
+                true
+            }
+            else {
+                false
+            }
+        };
+        if verify_merkle_proof(merkle_root.clone(), proof_path, ls) == false{
             println!("Failed to verify: {:?}", id);
         }
         else{
