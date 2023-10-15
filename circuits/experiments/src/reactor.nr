@@ -8,7 +8,6 @@ struct StateMachine{
     /* Old State */
         balances: [u64;2],
         accounts: [[u8;32];2],
-        merkle_in: [u8;2],
 
     /* New Transactions */
 
@@ -91,7 +90,6 @@ impl StateMachine{
         StateMachine{
             balances: balances,
             accounts: self.accounts,
-            merkle_in: self.merkle_in,
             sender_x: self.sender_x,
             sender_y: self.sender_y,
             recipient: self.recipient,

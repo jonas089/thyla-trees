@@ -1,21 +1,10 @@
 use dep::std;
 mod reactor;
 use reactor::{StateMachine, message::Message};
-/*
-    To be done:
-        + sender (!inf. bal) -> done
-        + timestamp -> not necessary, use nonce instead.
-        + actual merkle hash computation
-        * see https://noir-lang.org/standard_library/merkle_trees or from-scratch
-
-    Increases recipient balances, doesn't decrease sender
-    balances.
-*/
 
 fn main(
     balances: pub [u64;2], 
-    accounts: pub [[u8;32];2], 
-    merkle_in: pub [u8;2], 
+    accounts: pub [[u8;32];2],
     sender_x: [[u8;32];1],
     sender_y: [[u8;32];1],
     recipient: [[u8;32];1],
@@ -26,7 +15,6 @@ fn main(
     let mut state_machine = StateMachine{
         balances,
         accounts,
-        merkle_in,
         sender_x,
         sender_y,
         recipient,
@@ -44,7 +32,6 @@ fn stateMachine(){
     /*
         balances,
         accounts,
-        merkle_in,
         sender_x,
         sender_y,
         recipient,
@@ -55,8 +42,6 @@ fn stateMachine(){
         [10, 0],
         // accounts
         [[76, 195, 113, 207, 31, 191, 143, 106, 36, 227, 255, 61, 28, 142, 167, 76, 31, 82, 16, 250, 167, 114, 101, 243, 133, 87, 115, 12, 12, 19, 26, 177], [57, 141, 121, 60, 115, 189, 115, 103, 174, 6, 108, 20, 114, 134, 156, 80, 7, 222, 7, 107, 196, 2, 216, 251, 119, 174, 151, 31, 19, 46, 39, 92]],
-        // merkle hash (anything)
-        [123, 123],
         // x-coordinate
         [[76, 195, 113, 207, 31, 191, 143, 106, 36, 227, 255, 61, 28, 142, 167, 76, 31, 82, 16, 250, 167, 114, 101, 243, 133, 87, 115, 12, 12, 19, 26, 177]],
         // y-coordinate
