@@ -11,6 +11,7 @@ Circuit [here](https://github.com/jonas089/noir-rollup/tree/master/circuit/src)
 ```
 Merkle tree is not constructed on-chain
 Only the merkle path is proven on-chain (using some circuit)
+! Tornado cash only supports deposit and withdrawl / no transfer.
 ```
 
 # Slick implementation
