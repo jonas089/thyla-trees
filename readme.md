@@ -6,7 +6,7 @@ The purpose of this repo is to explore potential zk rollup implementations in no
 
 Circuit [here](https://github.com/jonas089/noir-rollup/tree/master/circuit/src)
 
-# Tornado cash - on-chain
+# Tornado cash implementation (On-chain)
 *Arkworks* -> wait for Noir backend support of `Bulletproofs`
 ```
 Merkle tree is not constructed on-chain
