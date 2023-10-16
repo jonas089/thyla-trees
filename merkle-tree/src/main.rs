@@ -148,13 +148,6 @@ fn find_leaf_sibling(root: MerkleNode, target: String) -> Option<MerkleNode>{
 }
 
 fn verify_merkle_proof(merkle_root: String, mut proof_path: Vec<String>, ls: bool) -> bool {
-    // Ensure the proof_path has an even number of elements
-    if proof_path.len() % 2 != 0 {
-        println!("Proof Path Length: {:?}", proof_path.len());
-        panic!("Proof path is not even!");
-        return false;
-    }
-    
     let mut current_hash = proof_path.pop().unwrap();
     while !proof_path.is_empty() {
         // this doesn't make sense
@@ -313,7 +306,7 @@ Full proof path: ["cc68c6ed4c7ec3ee1340b3227035ad94e33cf9a7a59345af0a5a49ee1723d
 fn more_tests(){
     let mut transactions: Vec<String> = Vec::new();
     let mut ids: Vec<String> = Vec::new();
-    for i in 0..8{
+    for i in 0..16{
         let _id = format!("0x{}", i.to_string());
         transactions.push(_id.clone());
         ids.push(_id);
@@ -350,7 +343,7 @@ fn more_tests(){
     //proof_path = vec!["00ada7f0393fced15bbb1fa02b200e487d1ea2562e63acff56ad8a753de9f981".to_string(), "97628320616cfee422be81b7eb8500ac796aaf34aa6c4a45777edd6546df116b".to_string(), "0x5".to_string(), "0x4".to_string()];
     println!("Proof path: {:?}", proof_path);
     println!("Merkle root: {:?}", &merkle_root);
-    println!("Verifier: {:?}", verify_merkle_proof(merkle_root.clone(), proof_path, false));
+    println!("[RESULT] Verifier: {:?}", verify_merkle_proof(merkle_root.clone(), proof_path, false));
 
 
     // Tx left from tree root
@@ -381,7 +374,7 @@ fn more_tests(){
     //proof_path = vec!["00ada7f0393fced15bbb1fa02b200e487d1ea2562e63acff56ad8a753de9f981".to_string(), "97628320616cfee422be81b7eb8500ac796aaf34aa6c4a45777edd6546df116b".to_string(), "0x5".to_string(), "0x4".to_string()];
     println!("Proof path: {:?}", proof_path);
     println!("Merkle root: {:?}", &merkle_root);
-    println!("Verifier: {:?}", verify_merkle_proof(merkle_root.clone(), proof_path, true));
+    println!("[RESULT] Verifier: {:?}", verify_merkle_proof(merkle_root.clone(), proof_path, true));
 
 }
 
