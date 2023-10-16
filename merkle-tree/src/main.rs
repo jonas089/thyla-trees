@@ -48,7 +48,6 @@ fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode> {
         // If odd number of nodes, duplicate last
         if nodes.len() % 2 != 0 {
             println!("Nodes: {:?}", nodes.len());
-            panic!("Node num odd");
             let last = nodes.last().unwrap().clone();
             nodes.push(last);
         }
@@ -154,6 +153,18 @@ fn verify_merkle_proof(merkle_root: String, mut proof_path: Vec<String>, ls: boo
         // must verify that each step is valid
         // currently it'll end up at the beginning of the proof path and return valid
 
+
+        /* Implementation
+        * If this is left to the parent, push right child of parent and hash
+        * If this is right to the parent, push left child of parent and hash
+        
+        
+        
+        
+        */
+
+
+        /* 
         let sibling = proof_path.pop().unwrap();
         //let node = proof_path.pop().unwrap();
         if ls == true{
@@ -177,8 +188,9 @@ fn verify_merkle_proof(merkle_root: String, mut proof_path: Vec<String>, ls: boo
         println!("Current Hash: {:?}, current target: {:?}", current_hash, sibling);
     }
     println!("Final hash: {:?}", &current_hash);
-    assert_eq!(merkle_root, current_hash);
+    //assert_eq!(merkle_root, current_hash);
     merkle_root == current_hash
+    */
 }
 
 
@@ -346,6 +358,7 @@ fn more_tests(){
     println!("[RESULT] Verifier: {:?}", verify_merkle_proof(merkle_root.clone(), proof_path, false));
 
 
+    /* 
     // Tx left from tree root
     let parent = find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x2"));
     let sibling = find_leaf_sibling(parent.clone().unwrap(), String::from("0x2"));
@@ -375,7 +388,7 @@ fn more_tests(){
     println!("Proof path: {:?}", proof_path);
     println!("Merkle root: {:?}", &merkle_root);
     println!("[RESULT] Verifier: {:?}", verify_merkle_proof(merkle_root.clone(), proof_path, true));
-
+    */
 }
 
 
@@ -384,7 +397,6 @@ fn more_tests(){
 ! number of nodes must be even, or else last element will be duplicated / e.g. transactions / 2 == even
 
 Merkle tree: Some(MerkleNode { data: "9893e1b34d1bedb6f26c1b74daa1d94c8312003718674ffa1afecba378b9d735", left: Some(MerkleNode { data: "00ada7f0393fced15bbb1fa02b200e487d1ea2562e63acff56ad8a753de9f981", left: Some(MerkleNode { data: "cc68c6ed4c7ec3ee1340b3227035ad94e33cf9a7a59345af0a5a49ee1723dcad", left: Some(MerkleNode { data: "0x0", left: None, right: None }), right: Some(MerkleNode { data: "0x1", left: None, right: None }) }), right: Some(MerkleNode { data: "7e844584f83a63208c5bb8851057910d2040eb253de53bce3057c33286270f7c", left: Some(MerkleNode { data: "0x2", left: None, right: None }), right: Some(MerkleNode { data: "0x3", left: None, right: None }) }) }), right: Some(MerkleNode { data: "cba59f10224e845a7c090576b53a35bb613d3bf91545b5c12d9e9c23e653946d", left: Some(MerkleNode { data: "16b30164c14d9cdc8c60f961799740352dd32cf7b1010b9c7cadaacc418e0e25", left: Some(MerkleNode { data: "0x4", left: None, right: None }), right: Some(MerkleNode { data: "0x5", left: None, right: None }) }), right: Some(MerkleNode { data: "97628320616cfee422be81b7eb8500ac796aaf34aa6c4a45777edd6546df116b", left: Some(MerkleNode { data: "0x6", left: None, right: None }), right: Some(MerkleNode { data: "0x7", left: None, right: None }) }) }) })
-
 
 */
 
