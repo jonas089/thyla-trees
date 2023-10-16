@@ -1,5 +1,6 @@
 extern crate sha256;
 use core::panic;
+use std::thread::current;
 
 use sha256::{digest, try_digest};
 
@@ -149,6 +150,7 @@ fn find_leaf_sibling(root: MerkleNode, target: String) -> Option<MerkleNode>{
 fn verify_merkle_proof(merkle_root: String, mut proof_path: Vec<String>, ls: bool) -> bool {
     // Ensure the proof_path has an even number of elements
     if proof_path.len() % 2 != 0 {
+        println!("Proof Path Length: {:?}", proof_path.len());
         panic!("Proof path is not even!");
         return false;
     }
@@ -161,14 +163,25 @@ fn verify_merkle_proof(merkle_root: String, mut proof_path: Vec<String>, ls: boo
 
         let sibling = proof_path.pop().unwrap();
         //let node = proof_path.pop().unwrap();
-        println!("Computing sibling {:?}, for current hash {:?}", &sibling, &current_hash);
         if ls == true{
-            current_hash = hash_string(current_hash.clone() + &sibling);   
+            if proof_path.len() == 0{
+                println!("LAST HASH: {:?}, LAST TARGET: {:?}", &current_hash, &sibling);
+                current_hash = hash_string(current_hash.clone() + &sibling);
+            }
+            else{
+                current_hash = hash_string(sibling.clone() + &current_hash);
+            }  
         }
-        else {
-            current_hash = hash_string(sibling + &current_hash);
+        else {    
+            if proof_path.len() == 0{
+                println!("LAST HASH: {:?}, LAST TARGET: {:?}", &current_hash, &sibling);
+                current_hash = hash_string(sibling.clone() + &current_hash);
+            }
+            else{
+                current_hash = hash_string(current_hash.clone() + &sibling);
+            }
         }
-        println!("Computation result: {:?}", &current_hash);
+        println!("Current Hash: {:?}, current target: {:?}", current_hash, sibling);
     }
     println!("Final hash: {:?}", &current_hash);
     assert_eq!(merkle_root, current_hash);
@@ -307,6 +320,9 @@ fn more_tests(){
     };
     let merkle_tree = build_merkle_tree(transactions.clone());
     let merkle_root = merkle_tree.clone().unwrap().data;
+    println!("Merkle Tree: {:?}", merkle_tree.clone());
+
+    // Tx right from tree root
     let parent = find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x5"));
     let sibling = find_leaf_sibling(parent.clone().unwrap(), String::from("0x5"));
     //println!("Sibling of 0x5: {:?}", sibling);
@@ -314,17 +330,59 @@ fn more_tests(){
     path.push(String::from("0x5"));
     println!("Path: {:?}", path);
     let mut proof_path: Vec<String> = Vec::new();
-    for leaf in &path.clone()[1..]{
-        proof_path.push(leaf.clone());
+    for leaf in &path.clone()[1..path.len()-1]{
+        //proof_path.push(leaf.clone());
         let leaf_parent = find_leaf_parent(merkle_tree.clone().unwrap(), leaf.clone()).unwrap();
         let leaf_sibling = find_leaf_sibling(leaf_parent.clone(), leaf.clone()).unwrap();
         //println!("Parent of leaf {:?} is {:?}", &leaf, &leaf_parent);
         //println!("Sibling of leaf {:?} is {:?}", &leaf, &leaf_sibling);
         proof_path.push(leaf_sibling.data);
     };
+    println!("Proof path no tx: {:?}", proof_path);
+    // append transaction and sibling
+    for leaf in &path.clone()[path.len()-1..]{
+        proof_path.push(leaf.clone());
+        let leaf_parent = find_leaf_parent(merkle_tree.clone().unwrap(), leaf.clone()).unwrap();
+        let leaf_sibling = find_leaf_sibling(leaf_parent.clone(), leaf.clone()).unwrap();
+        proof_path.push(find_leaf_sibling(leaf_parent.clone(), leaf.to_string()).unwrap().data);
+    }
+    println!("Proof path with tx: {:?}", proof_path);
+    //proof_path = vec!["00ada7f0393fced15bbb1fa02b200e487d1ea2562e63acff56ad8a753de9f981".to_string(), "97628320616cfee422be81b7eb8500ac796aaf34aa6c4a45777edd6546df116b".to_string(), "0x5".to_string(), "0x4".to_string()];
     println!("Proof path: {:?}", proof_path);
     println!("Merkle root: {:?}", &merkle_root);
-    println!("Verifier: {:?}", verify_merkle_proof(merkle_root, proof_path, false));
+    println!("Verifier: {:?}", verify_merkle_proof(merkle_root.clone(), proof_path, false));
+
+
+    // Tx left from tree root
+    let parent = find_leaf_parent(merkle_tree.clone().unwrap(), String::from("0x2"));
+    let sibling = find_leaf_sibling(parent.clone().unwrap(), String::from("0x2"));
+    //println!("Sibling of 0x5: {:?}", sibling);
+    let mut path = find_leaf_path(merkle_tree.clone().unwrap(), String::from("0x2"), Vec::new()).unwrap();
+    path.push(String::from("0x2"));
+    println!("Path: {:?}", path);
+    let mut proof_path: Vec<String> = Vec::new();
+    for leaf in &path.clone()[1..path.len()-1]{
+        //proof_path.push(leaf.clone());
+        let leaf_parent = find_leaf_parent(merkle_tree.clone().unwrap(), leaf.clone()).unwrap();
+        let leaf_sibling = find_leaf_sibling(leaf_parent.clone(), leaf.clone()).unwrap();
+        //println!("Parent of leaf {:?} is {:?}", &leaf, &leaf_parent);
+        //println!("Sibling of leaf {:?} is {:?}", &leaf, &leaf_sibling);
+        proof_path.push(leaf_sibling.data);
+    };
+    println!("Proof path no tx: {:?}", proof_path);
+    // append transaction and sibling
+    for leaf in &path.clone()[path.len()-1..]{
+        proof_path.push(leaf.clone());
+        let leaf_parent = find_leaf_parent(merkle_tree.clone().unwrap(), leaf.clone()).unwrap();
+        let leaf_sibling = find_leaf_sibling(leaf_parent.clone(), leaf.clone()).unwrap();
+        proof_path.push(find_leaf_sibling(leaf_parent.clone(), leaf.to_string()).unwrap().data);
+    }
+    println!("Proof path with tx: {:?}", proof_path);
+    //proof_path = vec!["00ada7f0393fced15bbb1fa02b200e487d1ea2562e63acff56ad8a753de9f981".to_string(), "97628320616cfee422be81b7eb8500ac796aaf34aa6c4a45777edd6546df116b".to_string(), "0x5".to_string(), "0x4".to_string()];
+    println!("Proof path: {:?}", proof_path);
+    println!("Merkle root: {:?}", &merkle_root);
+    println!("Verifier: {:?}", verify_merkle_proof(merkle_root.clone(), proof_path, true));
+
 }
 
 
