@@ -28,6 +28,8 @@ impl MerkleNode{
     }
 }
 
+
+// tree constructor (tested)
 fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode> {
     // Immediate return if no transactions
     if tx.is_empty() {
@@ -47,11 +49,9 @@ fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode> {
     while nodes.len() > 1 {
         // If odd number of nodes, duplicate last
         if nodes.len() % 2 != 0 {
-            println!("Nodes: {:?}", nodes.len());
             let last = nodes.last().unwrap().clone();
             nodes.push(last);
         }
-
         // Combine pairs of nodes
         nodes = nodes.chunks(2).map(|pair| {
             let left = Box::new(pair[0].clone());
@@ -63,11 +63,11 @@ fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode> {
             }
         }).collect();
     }
-
     // There's exactly one node left, the root of the Merkle tree
     nodes.pop()
 }
 
+// recursive function to find the path to a leaf
 fn find_leaf_path(root: MerkleNode, target: String, path: Vec<String>) -> Option<Vec<String>>{
     if root.clone().is_empty(){
         return None;
@@ -75,29 +75,26 @@ fn find_leaf_path(root: MerkleNode, target: String, path: Vec<String>) -> Option
     if root.data == target{
         return Some(path);
     }
-
     let mut path_cp_left = path.clone();
     path_cp_left.push(root.data.clone());
     let mut path_cp_right = path.clone();
     path_cp_right.push(root.data.clone());
-
     if let Some(ref left) = root.left{
         let left_path = find_leaf_path(*root.clone().left.unwrap(), target.clone(), path_cp_left);
         if !left_path.is_none(){
             return left_path;
         }
     }
-
     if let Some(ref right) = root.right{
         let right_path = find_leaf_path(*root.clone().right.unwrap(), target, path_cp_right);
         if !right_path.is_none(){
             return right_path;
         }
     }
-
     return None;
 }
 
+// find the parent for a leaf in the tree
 fn find_leaf_parent(root: MerkleNode, target: String) -> Option<MerkleNode>{
     // check if target in children
     if let Some(ref left) = root.left{
@@ -122,7 +119,6 @@ fn find_leaf_parent(root: MerkleNode, target: String) -> Option<MerkleNode>{
             return  left_node;
         }
     }
-
     if let Some(ref right) = root.right{
         let right_node = find_leaf_parent(*root.clone().right.unwrap(), target.clone());
         if !right_node.is_none(){
@@ -132,6 +128,7 @@ fn find_leaf_parent(root: MerkleNode, target: String) -> Option<MerkleNode>{
     return None
 }
 
+// find the sibling of a leaf -> takes parent as input
 fn find_leaf_sibling(root: MerkleNode, target: String) -> Option<MerkleNode>{
     if let Some(ref left) = root.left{
         if root.clone().left.unwrap().data == target{
@@ -146,6 +143,43 @@ fn find_leaf_sibling(root: MerkleNode, target: String) -> Option<MerkleNode>{
     }
 }
 
+// put the merkle path in order to generate inputs for the circuit
+// -> this eliminates the need to re-hash the merkle inclusion in a distributed system
+fn merkle_path_in_order(merkle_root: String, merkle_tree: MerkleNode, mut proof_path: Vec<String>) -> Vec<Vec<String>>{
+    let mut left_side = Vec::new();
+    let mut right_side = Vec::new();
+
+    let mut current_hash = proof_path.pop().unwrap();
+    let parent = find_leaf_parent(merkle_tree.clone(), current_hash.clone()).unwrap();
+    if let Some(ref left) = parent.left{
+        if left.clone().data == current_hash{
+            left_side.push(current_hash.clone());
+        }
+        else{
+            right_side.push(current_hash.clone());
+        }
+    }
+    while !proof_path.is_empty() {
+        let parent = find_leaf_parent(merkle_tree.clone(), current_hash.clone()).unwrap();
+        let sibling = proof_path.pop().unwrap();
+
+        // there is always one node to the left and one to the right
+        // first push left node, then push the right node
+        if let Some(ref left) = parent.left{
+            if left.clone().data == current_hash{
+                right_side.push(sibling.clone());
+                current_hash = hash_string(current_hash + &sibling);
+            }
+            else{
+                left_side.push(sibling.clone());
+                current_hash = hash_string(sibling.clone() + &current_hash);
+            }
+        }
+    }
+    vec![left_side, right_side]
+}
+
+// verify that a merkle path is valid
 fn verify_merkle_proof(merkle_root: String, merkle_tree: MerkleNode, mut proof_path: Vec<String>) -> bool {
     let mut current_hash = proof_path.pop().unwrap();
     while !proof_path.is_empty() {
@@ -157,7 +191,8 @@ fn verify_merkle_proof(merkle_root: String, merkle_tree: MerkleNode, mut proof_p
             if left.clone().data == current_hash{
                 println!("Is left.");
                 println!("hashing: {:?} and {:?}", current_hash, &sibling);
-                current_hash = hash_string(current_hash + &sibling);            }
+                current_hash = hash_string(current_hash + &sibling);
+            }
             else{
                 current_hash = hash_string(sibling.clone() + &current_hash);
             }
@@ -208,12 +243,38 @@ fn more_tests(){
         let leaf_sibling = find_leaf_sibling(leaf_parent.clone(), leaf.clone()).unwrap();
         proof_path.push(find_leaf_sibling(leaf_parent.clone(), leaf.to_string()).unwrap().data);
     }
-    println!("Proof path with tx: {:?}", proof_path);
+    println!("Proof path with tx: {:?}", proof_path.clone());
     println!("Merkle root: {:?}", &merkle_root);
-    println!("[RESULT] Verifier: {:?}", verify_merkle_proof(merkle_root.clone(),  merkle_tree.clone().unwrap(), proof_path));
-
-
+    println!("[RESULT] Verifier: {:?}", verify_merkle_proof(merkle_root.clone(),  merkle_tree.clone().unwrap(), proof_path.clone()));
     println!("{:?}", 0%2==0);
+
+    // derive full proof path (circuit input) for a transaction
+    println!("{:?}", merkle_path_in_order(merkle_root.clone(), merkle_tree.clone().unwrap(), proof_path.clone()));
+    let left_side = merkle_path_in_order(merkle_root.clone(), merkle_tree.clone().unwrap(), proof_path.clone())[0].clone();
+    let right_side = merkle_path_in_order(merkle_root.clone(), merkle_tree.clone().unwrap(), proof_path.clone())[1].clone();
+    let depth: usize = {
+        if left_side.len() > right_side.len(){
+            left_side.len()
+        }
+        else{
+            right_side.len()
+        }
+    };
+    println!("Depth: {}", depth);
+    let mut complete_proof_path: Vec<String> = Vec::new();
+    for i in 0..depth{
+        if i < left_side.len() && i < right_side.len(){
+            complete_proof_path.push(left_side[i].clone());
+            complete_proof_path.push(right_side[i].clone());
+        }
+        else if i < left_side.len(){
+            complete_proof_path.push(left_side[i].clone());
+        }
+        else if i < right_side.len(){
+            complete_proof_path.push(right_side[i].clone());
+        }
+    }
+    println!("Complete proof path: {:?}", complete_proof_path);
 }
 
 
@@ -231,5 +292,6 @@ Merkle tree: Some(MerkleNode { data: "9893e1b34d1bedb6f26c1b74daa1d94c8312003718
     * [0x1, 0x2, ax33, fb44, cd59]
     -> c = H(H(H(H(0x1, 0x2), ax33), fb44), cd59)
     assert(c == merkle_hash)
+    ! fixed size array
 
 */
