@@ -270,7 +270,7 @@ fn more_tests(){
         else if i < complete_proof_path[0].len(){
             current_hash = hash_string(complete_proof_path[0][i].clone() + &current_hash);
         }
-        else if i < complete_proof_path[i].len(){
+        else if i < complete_proof_path[1].len(){
             current_hash = hash_string(current_hash + &complete_proof_path[1][i].clone());
         }
     }
