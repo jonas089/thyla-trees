@@ -294,3 +294,11 @@ Merkle tree: Some(MerkleNode { data: "9893e1b34d1bedb6f26c1b74daa1d94c8312003718
     ! fixed size array
 
 */
+
+/*
+
+Vec<(String, bool)>, where bool indicates whether a node is left or right.
+-> Single, fixed size Vec that can be used as circuit input.
+-> pass as [(String, bool)] or equivalent [String] & [bool]; n
+-> hash the bytes of each String and compare merkle hash.
+*/
