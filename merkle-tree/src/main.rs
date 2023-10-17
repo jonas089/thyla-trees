@@ -198,7 +198,7 @@ fn verify_merkle_proof(merkle_root: String, merkle_tree: MerkleNode, mut proof_p
             }
         }
     }
-
+    assert_eq!(merkle_root, current_hash);
     merkle_root == current_hash
     /*
     println!("Final hash: {:?}", &current_hash);
@@ -211,6 +211,7 @@ fn verify_merkle_proof(merkle_root: String, merkle_tree: MerkleNode, mut proof_p
 fn more_tests(){
     let mut transactions: Vec<String> = Vec::new();
     let mut ids: Vec<String> = Vec::new();
+    // merkle tree with 32 transactions
     for i in 0..32{
         let _id = format!("0x{}", i.to_string());
         transactions.push(_id.clone());
@@ -260,24 +261,22 @@ fn more_tests(){
             right_side.len()
         }
     };
-    println!("Depth: {}", depth);
-    let mut complete_proof_path: Vec<String> = Vec::new();
+    let complete_proof_path: Vec<Vec<String>> = vec![left_side, right_side];
+    let mut current_hash = String::new();
     for i in 0..depth{
-        if i < left_side.len() && i < right_side.len(){
-            complete_proof_path.push(left_side[i].clone());
-            complete_proof_path.push(right_side[i].clone());
+        if i < complete_proof_path[0].len() && i < complete_proof_path[1].len(){
+            current_hash = hash_string(complete_proof_path[0][i].clone() + &complete_proof_path[1][i]);
         }
-        else if i < left_side.len(){
-            complete_proof_path.push(left_side[i].clone());
+        else if i < complete_proof_path[0].len(){
+            current_hash = hash_string(complete_proof_path[0][i].clone() + &current_hash);
         }
-        else if i < right_side.len(){
-            complete_proof_path.push(right_side[i].clone());
+        else if i < complete_proof_path[i].len(){
+            current_hash = hash_string(current_hash + &complete_proof_path[1][i].clone());
         }
     }
-    println!("Complete proof path: {:?}", complete_proof_path);
+    println!("Output hash: {:?}", current_hash);
+    assert_eq!(current_hash, merkle_root);
 }
-
-
 
 /*
 ! number of nodes must be even, or else last element will be duplicated / e.g. transactions / 2 == even
