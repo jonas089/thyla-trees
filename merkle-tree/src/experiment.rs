@@ -28,7 +28,6 @@ impl MerkleNode{
     }
 }
 
-
 // tree constructor (tested)
 fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode> {
     // Immediate return if no transactions
@@ -264,6 +263,14 @@ fn more_tests(){
     assert_eq!(current_hash, merkle_root);
     
     println!("Should be merkle: {:?}", hash_string(String::from("e409c7cb5ef97a57feeeb07a367ec8fab1ac13c5bfdfe1da8947162a8848b00a") + &String::from("a29f7db9563cc790b10d31d0fe8fd4fc26e033e5f719e04b0ac6e7a4df91864b")));
+
+
+    /* Unoptimized notes
+        * network starts with empty tree
+        * tx is added, entire tree is re-hashed
+        * generate proof that a tx is in the tree (proof path -> verifier)
+        * e.g. "this path is valid for your merkle hash"
+    */
 }
 
 /*

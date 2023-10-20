@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 sha256="1.4.0"
+uint = "0.9.0"

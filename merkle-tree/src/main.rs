@@ -1,56 +1,81 @@
-mod experiment;
-use experiment::hash_string;
+extern crate sha256;
+use sha256::{digest, try_digest};
+// insert, get
+use std::collections::HashMap;
+use uint::construct_uint;
 fn main(){
     panic!("Run cargo test -- --nocapture instead!");
 }
 
-/* Program outline
-    * construct an empty merkle tree of fixed size
-    * hash each level and store each level's hash as a fixed const index (similar to tornadocash)
-    * replace the first empty node in the tree with a new entry
-    * re-construct the merkle tree (-> make use of the constants)
-    * implement verification logic similar to what exists in 'experiment.rs'
-*/
-
-#[derive(Debug, Clone)]
-struct MerkleNode{
-    data: String,
-    left: Option<Box<MerkleNode>>,
-    right: Option<Box<MerkleNode>>
+construct_uint! {
+    pub struct U256(4); // 4 * 64 = 256 bits
 }
 
-fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode> {
-    if tx.is_empty() {
-        return None;
-    }
-    let mut nodes = tx.into_iter()
-        .map(|t| MerkleNode {
-            data: t,
-            left: None,
-            right: None,
-        })
-        .collect::<Vec<_>>();
-    while nodes.len() > 1 {
-        if nodes.len() % 2 != 0 {
-            let last = nodes.last().unwrap().clone();
-            nodes.push(last);
-        }
-        nodes = nodes.chunks(2).map(|pair| {
-            let left = Box::new(pair[0].clone());
-            let right = Box::new(pair[1].clone());
-            MerkleNode {
-                data: hash_string(format!("{}{}", left.data, right.data)),
-                left: Some(left),
-                right: Some(right),
+fn hash_string(input: String) -> String{
+    digest(input)
+}
+
+fn hashLeftRight(left: String, right: String) -> String{
+    hash_string(left + &right)
+}
+
+// Tornado tree for Strings(hex) in Rust
+#[derive(Default)]
+struct TornadoTree{
+    nextIndex: u32,
+    currentRootIndex: u32,
+    levels: u32,
+    zero: Vec<String>,
+    filledSubtrees: HashMap<u32, String>,
+    roots: HashMap<u32, String>,
+    ROOT_HISTORY_SIZE: u32
+}
+impl TornadoTree{
+    fn insert(&mut self, leaf: String) -> u32{
+        let mut currentIndex: u32 = self.nextIndex;
+        let mut currentLevelHash: String = leaf;
+        let mut left: String = String::new();
+        let mut right: String = String::new();
+        for i in 0..self.levels{
+            if (currentIndex % 2 == 0){
+                left = currentLevelHash.clone();
+                right = self.zero[i as usize].clone();
+                self.filledSubtrees.insert(i, currentLevelHash.clone());
             }
-        }).collect();
+            else{
+                left = self.filledSubtrees.get(&i).unwrap().clone();
+                right = currentLevelHash;
+            }
+            currentLevelHash = hashLeftRight(left, right);
+            currentIndex /= 2;
+        };
+        let newRootIndex: u32 = (self.currentRootIndex + 1) % self.ROOT_HISTORY_SIZE;
+        self.currentRootIndex = newRootIndex;
+        self.roots.insert(newRootIndex, currentLevelHash);
+        self.nextIndex = self.nextIndex + 1;
+        self.nextIndex
     }
-    nodes.pop()
+    fn calculateLevels(&self) -> Vec<String>{
+        let mut zero: Vec<String> = Vec::new();
+        let zero_value: String = String::from("snark");
+        // first level hash
+        let mut current_hash: String = hash_string(zero_value.clone() + &zero_value);
+        zero.push(current_hash.clone());
+        // next level hashs
+        for i in 0..self.levels - 1{
+            current_hash = hash_string(current_hash.clone() + &current_hash);
+            zero.push(current_hash.clone());
+        };
+        zero
+    }
 }
 
 #[test]
-fn test(){
-    // new merkle tree that'll support 1000 transactions
-    let zeros: Vec<String> = vec!["0".to_string(); 1000];
-    
+fn tornado(){
+    let levels: u32 = 4;
+    const ROOT_HISTORY_SIZE: u32 = 30;
+    // construct empty tree from params
+    let mut tree = TornadoTree::default();
+    tree.levels = levels;
+    tree.ROOT_HISTORY_SIZE = ROOT_HISTORY_SIZE;
 }
