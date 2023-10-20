@@ -55,7 +55,7 @@ impl TornadoTree{
         self.nextIndex = self.nextIndex + 1;
         self.nextIndex
     }
-    fn calculateLevels(&self) -> Vec<String>{
+    fn calculateLevels(&mut self){
         let mut zero: Vec<String> = Vec::new();
         let zero_value: String = String::from("snark");
         // first level hash
@@ -66,7 +66,13 @@ impl TornadoTree{
             current_hash = hash_string(current_hash.clone() + &current_hash);
             zero.push(current_hash.clone());
         };
-        zero
+        self.zero = zero.clone();
+        self.roots.insert(0, zero[zero.len() - 1].clone());
+    }
+
+
+    fn getLastRoot(&self) -> String{
+        return self.roots[&self.currentRootIndex].clone();
     }
 }
 
@@ -78,4 +84,10 @@ fn tornado(){
     let mut tree = TornadoTree::default();
     tree.levels = levels;
     tree.ROOT_HISTORY_SIZE = ROOT_HISTORY_SIZE;
+    tree.calculateLevels();
+    println!("Root before insert: {:?}", tree.getLastRoot());
+    tree.insert(String::from("some_transaction_id"));
+    println!("Root after first insert: {:?}", tree.getLastRoot());
+    tree.insert(String::from("some_other_transaction_id"));
+    println!("Root after second insert: {:?}", tree.getLastRoot());
 }
