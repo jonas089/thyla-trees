@@ -28,10 +28,12 @@ struct TornadoTree{
     zero: Vec<String>,
     filledSubtrees: HashMap<u32, String>,
     roots: HashMap<u32, String>,
-    ROOT_HISTORY_SIZE: u32
+    ROOT_HISTORY_SIZE: u32,
+    leafs: Vec<String>
 }
 impl TornadoTree{
     fn insert(&mut self, leaf: String) -> u32{
+        self.leafs.push(leaf.clone());
         let mut currentIndex: u32 = self.nextIndex;
         let mut currentLevelHash: String = leaf;
         let mut left: String = String::new();
@@ -55,6 +57,7 @@ impl TornadoTree{
         self.nextIndex = self.nextIndex + 1;
         self.nextIndex
     }
+    
     fn calculateLevels(&mut self){
         let mut zero: Vec<String> = Vec::new();
         let zero_value: String = String::from("snark");
@@ -70,7 +73,6 @@ impl TornadoTree{
         self.roots.insert(0, zero[zero.len() - 1].clone());
     }
 
-
     fn getLastRoot(&self) -> String{
         return self.roots[&self.currentRootIndex].clone();
     }
@@ -79,7 +81,8 @@ impl TornadoTree{
 #[test]
 fn tornado(){
     let levels: u32 = 4;
-    const ROOT_HISTORY_SIZE: u32 = 30;
+    // won't be possible to verify merkle paths that have been dropped
+    const ROOT_HISTORY_SIZE: u32 = 1000;
     // construct empty tree from params
     let mut tree = TornadoTree::default();
     tree.levels = levels;
@@ -90,4 +93,27 @@ fn tornado(){
     println!("Root after first insert: {:?}", tree.getLastRoot());
     tree.insert(String::from("some_other_transaction_id"));
     println!("Root after second insert: {:?}", tree.getLastRoot());
+
+    tree.insert(String::from("some_3rd_transaction"));
+    tree.insert(String::from("some_5th_transaction"));
+    println!("test: {:?}", tree.filledSubtrees);
+    println!("Leafs: {:?}", tree.leafs);
 }
+
+/* What's to be proven
+    * valid merkle path computation (assert | == root)
+*/
+
+/* How Tornadocash works
+    * deposit => add leaf to preimage of tree
+    * withdraw => construct full merkle tree, prove path for a known leaf
+    * the transaction itself is not stored on-chain, only a commitment (hash)
+    * knowing the preimage of the hash and being able to prove the path makes you elible to withdraw
+*/
+
+/* Construct full merkle tree
+    * Take leafs from tornado tree
+    * Build merkle tree bottom-up
+    * obtain proof path
+    * generate zk-proof for merkle path
+*/
