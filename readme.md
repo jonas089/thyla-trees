@@ -29,7 +29,7 @@ Experimental merkle tree [code](https://github.com/jonas089/noir-rollup/blob/mas
 ❗ How is output state proven / how are balances calculated?
 
 
-# Suboptimal implementation
+# Suboptimal implementation - discontinued
 
 ```
 Circuit takes all new transaction data and accounting state
