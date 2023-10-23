@@ -81,8 +81,7 @@ impl TornadoTree{
 #[test]
 fn tornado(){
     let levels: u32 = 4;
-    // won't be possible to verify merkle paths that have been dropped
-    const ROOT_HISTORY_SIZE: u32 = 1000;
+    const ROOT_HISTORY_SIZE: u32 = 30;
     // construct empty tree from params
     let mut tree = TornadoTree::default();
     tree.levels = levels;
