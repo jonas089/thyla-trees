@@ -236,7 +236,7 @@ fn constructor(depth: u32) -> Option<Vec<MerkleNode>>{
     println!("Bottom level: {:?}", &bottom_level);
     // start at first hash (one level above tx data)
     let mut current_level_height = 1;
-    while current_level.len() > 2{
+    while current_level.len() > 1{
         println!("Current Level: {:?}", &current_level);
 
 
