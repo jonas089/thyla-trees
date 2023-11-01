@@ -7,14 +7,6 @@ fn main(){
     panic!("Run cargo test -- --nocapture instead!");
 }
 
-
-#[derive(Debug, Clone)]
-struct MerkleNode{
-    data: String,
-    left: Option<Box<MerkleNode>>,
-    right: Option<Box<MerkleNode>>
-}
-
 fn hash_string(input: String) -> String{
     digest(input)
 }
@@ -23,85 +15,103 @@ fn hashLeftRight(left: String, right: String) -> String{
     hash_string(left + &right)
 }
 
-
-
-/* Tree parameters
-
-    * Depth: 3
-    * Size: 2^2 = 4 transactions
-
-*/
-
-fn constructor(depth: u32) -> Option<Vec<MerkleNode>>{
-    // zero val for merkle roots
-    let size = 2_u32.pow(depth-1_u32);
-    let zero_val = String::from("casper");
-    let mut zero_levels: Vec<String> = Vec::new();
-    let mut current_level = zero_val.clone();
-    zero_levels.push(zero_val.clone());
-    for level in 0..depth - 2{
-        let _hash = hashLeftRight(current_level.clone(), current_level.clone());
-        zero_levels.push(_hash.clone());
-        current_level = _hash;
-    };
-    println!("Levels: {:?}", zero_levels);
-    
-    let transactions = vec![String::from("tx01"), String::from("tx02")];
-    let mut levels: Vec<Vec<MerkleNode>> = Vec::new();
-    let mut bottom_level: Vec<MerkleNode> = Vec::new();
-    for tx in transactions{
-        bottom_level.push(MerkleNode { 
-            data: tx, 
-            left: None, 
-            right: None })
-    };
-
-    while bottom_level.len() < size as usize{
-        bottom_level.push(MerkleNode { data: 
-            zero_val.clone(), 
-            left: None, 
-            right: None });
-    }
-
-    let mut current_level = bottom_level.clone();
-    println!("Bottom level: {:?}", &bottom_level);
-    // start at first hash (one level above tx data)
-    let mut current_level_height = 1;
-    while current_level.len() > 1{
-        println!("Current Level: {:?}", &current_level);
-
-
-        while current_level.len() % 2 != 0{
-            current_level.push(MerkleNode { data: zero_levels[current_level_height].clone(), left: None, right: None });
-        }
-        let mut new_level: Vec<MerkleNode> = Vec::new();
-
-
-
-        println!("Len of current level: {:?}", &current_level.len());
-        for i in (0..current_level.len()).step_by(2){
-            let left: MerkleNode = current_level[i].clone();
-            let right: MerkleNode = current_level[i+1].clone();
-            new_level.push(MerkleNode { 
-                data: hashLeftRight(left.clone().data, right.clone().data), 
-                left: Some(Box::new(left.clone())), 
-                right: Some(Box::new(right.clone()))}
-            );
-            levels.push(new_level.clone());
-        };
-        current_level = new_level.clone();
-        current_level_height += 1;
-    };
-    return levels.pop();
-
-    // return here
+#[derive(Debug, Clone)]
+struct MerkleNode{
+    data: String,
+    left: Option<Box<MerkleNode>>,
+    right: Option<Box<MerkleNode>>
 }
 
+#[derive(Debug, Clone)]
+struct MerkleTree{
+    root: Option<MerkleNode>,
+    depth: u32
+}
+
+impl MerkleTree{
+    // not optimized, but sufficient for circuit research with a small set of transactions.
+    fn build(&mut self, transactions: Vec<String>){
+        // zero val for merkle roots
+        let size = 2_u32.pow(self.depth-1_u32);
+        let zero_val = String::from("casper");
+        let mut zero_levels: Vec<String> = Vec::new();
+        let mut current_level = zero_val.clone();
+        zero_levels.push(zero_val.clone());
+        for level in 0..self.depth - 2{
+            let _hash = hashLeftRight(current_level.clone(), current_level.clone());
+            zero_levels.push(_hash.clone());
+            current_level = _hash;
+        };
+        println!("Zero levels: {:?}", zero_levels);
+        let mut levels: Vec<Vec<MerkleNode>> = Vec::new();
+        let mut bottom_level: Vec<MerkleNode> = Vec::new();
+        for tx in transactions{
+            bottom_level.push(MerkleNode { 
+                data: tx, 
+                left: None, 
+                right: None })
+        };
+
+        while bottom_level.len() < size as usize{
+            bottom_level.push(MerkleNode { data: 
+                zero_val.clone(), 
+                left: None, 
+                right: None });
+        }
+
+        let mut current_level = bottom_level.clone();
+        println!("Bottom level: {:?}", &bottom_level);
+        // start at first hash (one level above tx data)
+        let mut current_level_height = 1;
+        while current_level.len() > 1{
+            println!("Current Level: {:?}", &current_level);
+
+
+            while current_level.len() % 2 != 0{
+                current_level.push(MerkleNode { data: zero_levels[current_level_height].clone(), left: None, right: None });
+            }
+            let mut new_level: Vec<MerkleNode> = Vec::new();
+
+
+
+            println!("Len of current level: {:?}", &current_level.len());
+            for i in (0..current_level.len()).step_by(2){
+                let left: MerkleNode = current_level[i].clone();
+                let right: MerkleNode = current_level[i+1].clone();
+
+                /*
+                    Don't hash if L === R, instead push zero_level node.
+                    * create nodes for each level
+                    * push the level node 
+                */
+                new_level.push(MerkleNode { 
+                    data: hashLeftRight(left.clone().data, right.clone().data), 
+                    left: Some(Box::new(left.clone())), 
+                    right: Some(Box::new(right.clone()))}
+                );
+                levels.push(new_level.clone());
+            };
+            current_level = new_level.clone();
+            current_level_height += 1;
+        };
+        self.root = Some(levels.pop().unwrap()[0].clone());
+
+        // return here
+    }
+}
+
+
 #[test]
-fn test_constructor(){
-    let depth: u32 = 3;
-    let result = constructor(depth).unwrap();
-    println!("Merkle Tree: {:?}", result);
+fn build_merkle_tree(){
+    let mut tree = MerkleTree{
+        root: None,
+        depth: 3
+    };
+
+    let transactions = vec![String::from("tx01"), String::from("tx02")];
+    tree.build(transactions);
+
+    println!("Tree root: {:?}", tree.root);
 }
 
 
