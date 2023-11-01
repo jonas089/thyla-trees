@@ -1,11 +1,14 @@
 extern crate sha256;
 use sha256::{digest, try_digest};
 // insert, get
-use std::collections::HashMap;
+use std::{collections::HashMap};
 use uint::construct_uint;
 fn main(){
     panic!("Run cargo test -- --nocapture instead!");
 }
+
+
+/* 
 
 construct_uint! {
     pub struct U256(4); // 4 * 64 = 256 bits
@@ -19,6 +22,53 @@ fn hashLeftRight(left: String, right: String) -> String{
     hash_string(left + &right)
 }
 
+#[derive(Debug, Clone)]
+struct MerkleNode{
+    data: String,
+    left: Option<Box<MerkleNode>>,
+    right: Option<Box<MerkleNode>>
+}
+
+fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode>{
+    if tx.is_empty(){
+        return None;
+    };
+    // turn every transaction into a node
+    let mut nodes = tx.into_iter()
+        .map(|t| MerkleNode {
+            data: t,
+            left: None,
+            right: None,
+        })
+        .collect::<Vec<_>>();
+    // Build tree from the bottom up
+    while nodes.len() > 1 {
+        // New vector to hold the parents of the current level.
+        let mut new_level = Vec::new();
+
+        // Process nodes in pairs. If there's an odd one out, it will be included in the next level as-is.
+        for pair in nodes.chunks_exact(2) {
+            let left = Box::new(pair[0].clone());
+            let right = Box::new(pair[1].clone());
+            new_level.push(MerkleNode {
+                data: hash_string(format!("{}{}", left.data, right.data)),
+                left: Some(left),
+                right: Some(right),
+            });
+        }
+
+        // Check if there's one unpaired node left and carry it over to the next level.
+        if nodes.len() % 2 != 0 {
+            new_level.push(nodes.last().unwrap().clone());
+        }
+
+        // Move up to the next level of the tree.
+        nodes = new_level;
+    }
+    // There's exactly one node left, the root of the Merkle tree
+    nodes.pop()
+
+}
 // Tornado tree for Strings(hex) in Rust
 #[derive(Default)]
 struct TornadoTree{
@@ -97,6 +147,10 @@ fn tornado(){
     tree.insert(String::from("some_5th_transaction"));
     println!("test: {:?}", tree.filledSubtrees);
     println!("Leafs: {:?}", tree.leafs);
+    let tx = vec![String::from("some_tx"); 11];
+    let full_tree = build_merkle_tree(tx.clone());
+    println!("Input tx: {:?}", tx);
+    println!("Full tree: {:?}", full_tree);
 }
 
 /* What's to be proven
@@ -116,3 +170,105 @@ fn tornado(){
     * obtain proof path
     * generate zk-proof for merkle path
 */
+
+
+*/
+
+
+
+#[derive(Debug, Clone)]
+struct MerkleNode{
+    data: String,
+    left: Option<Box<MerkleNode>>,
+    right: Option<Box<MerkleNode>>
+}
+
+fn hash_string(input: String) -> String{
+    digest(input)
+}
+
+fn hashLeftRight(left: String, right: String) -> String{
+    hash_string(left + &right)
+}
+
+
+
+/* Tree parameters
+
+    * Depth: 3
+    * Size: 2^2 = 4 transactions
+
+*/
+
+fn constructor(depth: u32) -> Option<Vec<MerkleNode>>{
+    // zero val for merkle roots
+    let size = 2_u32.pow(depth-1_u32);
+    let zero_val = String::from("casper");
+    let mut zero_levels: Vec<String> = Vec::new();
+    let mut current_level = zero_val.clone();
+    zero_levels.push(zero_val.clone());
+    for level in 0..depth - 2{
+        let _hash = hashLeftRight(current_level.clone(), current_level.clone());
+        zero_levels.push(_hash.clone());
+        current_level = _hash;
+    };
+    println!("Levels: {:?}", zero_levels);
+    
+    let transactions = vec![String::from("tx01"), String::from("tx02")];
+    let mut levels: Vec<Vec<MerkleNode>> = Vec::new();
+    let mut bottom_level: Vec<MerkleNode> = Vec::new();
+    for tx in transactions{
+        bottom_level.push(MerkleNode { 
+            data: tx, 
+            left: None, 
+            right: None })
+    };
+
+    while bottom_level.len() < size as usize{
+        bottom_level.push(MerkleNode { data: 
+            zero_val.clone(), 
+            left: None, 
+            right: None });
+    }
+
+
+    let mut current_level = bottom_level.clone();
+    println!("Bottom level: {:?}", &bottom_level);
+    // start at first hash (one level above tx data)
+    let mut current_level_height = 1;
+    while current_level.len() > 2{
+        println!("Current Level: {:?}", &current_level);
+
+
+        while current_level.len() % 2 != 0{
+            current_level.push(MerkleNode { data: zero_levels[current_level_height].clone(), left: None, right: None });
+        }
+        let mut new_level: Vec<MerkleNode> = Vec::new();
+
+
+
+        println!("Len of current level: {:?}", &current_level.len());
+        for i in (0..current_level.len()).step_by(2){
+            let left: MerkleNode = current_level[i].clone();
+            let right: MerkleNode = current_level[i+1].clone();
+            new_level.push(MerkleNode { 
+                data: hashLeftRight(left.clone().data, right.clone().data), 
+                left: Some(Box::new(left.clone())), 
+                right: Some(Box::new(right.clone()))}
+            );
+            levels.push(new_level.clone());
+        };
+        current_level = new_level.clone();
+        current_level_height += 1;
+    };
+    return levels.pop();
+
+    // return here
+}
+
+#[test]
+fn test_constructor(){
+    let depth: u32 = 3;
+    let result = constructor(depth).unwrap();
+    println!("Merkle Tree: {:?}", result);
+}

@@ -44,23 +44,28 @@ fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode> {
         })
         .collect::<Vec<_>>();
 
-    // Build tree from the bottom up
     while nodes.len() > 1 {
-        // If odd number of nodes, duplicate last
-        if nodes.len() % 2 != 0 {
-            let last = nodes.last().unwrap().clone();
-            nodes.push(last);
-        }
-        // Combine pairs of nodes
-        nodes = nodes.chunks(2).map(|pair| {
+        // New vector to hold the parents of the current level.
+        let mut new_level = Vec::new();
+
+        // Process nodes in pairs. If there's an odd one out, it will be included in the next level as-is.
+        for pair in nodes.chunks_exact(2) {
             let left = Box::new(pair[0].clone());
             let right = Box::new(pair[1].clone());
-            MerkleNode {
+            new_level.push(MerkleNode {
                 data: hash_string(format!("{}{}", left.data, right.data)),
                 left: Some(left),
                 right: Some(right),
-            }
-        }).collect();
+            });
+        }
+
+        // Check if there's one unpaired node left and carry it over to the next level.
+        if nodes.len() % 2 != 0 {
+            new_level.push(nodes.last().unwrap().clone());
+        }
+
+        // Move up to the next level of the tree.
+        nodes = new_level;
     }
     // There's exactly one node left, the root of the Merkle tree
     nodes.pop()
@@ -263,7 +268,6 @@ fn more_tests(){
     assert_eq!(current_hash, merkle_root);
     
     println!("Should be merkle: {:?}", hash_string(String::from("e409c7cb5ef97a57feeeb07a367ec8fab1ac13c5bfdfe1da8947162a8848b00a") + &String::from("a29f7db9563cc790b10d31d0fe8fd4fc26e033e5f719e04b0ac6e7a4df91864b")));
-
 
     /* Unoptimized notes
         * network starts with empty tree
