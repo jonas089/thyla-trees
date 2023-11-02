@@ -145,6 +145,58 @@ impl MerkleTree{
         }
         return None
     }
+    // recursive function to find the path to a leaf
+    fn find_leaf_path(&self, root: MerkleNode, target: String, mut path: Vec<String>) -> Option<Vec<String>>{
+        if root.data == target{
+            path.push(target);
+            let mut proof_path: Vec<String> = Vec::new();
+            for leaf in &path.clone()[1..path.len()]{
+                //proof_path.push(leaf.clone());
+                let leaf_parent = self.find_leaf_parent(self.clone().root.unwrap(), leaf.clone()).unwrap();
+                let leaf_sibling = self.find_leaf_sibling(leaf_parent.clone(), leaf.clone()).unwrap();
+                //println!("Leaf: {}, sibling: {:?}", leaf, leaf_sibling.data);
+                proof_path.push(leaf_sibling.data);
+            };
+            return Some(proof_path);
+        }
+        let mut path_cp_left = path.clone();
+        path_cp_left.push(root.data.clone());
+        let mut path_cp_right = path.clone();
+        path_cp_right.push(root.data.clone());
+        if let Some(ref left) = root.left{
+            let left_path = self.find_leaf_path(*root.clone().left.unwrap(), target.clone(), path_cp_left);
+            if !left_path.is_none(){
+                return left_path;
+            }
+        }
+        if let Some(ref right) = root.right{
+            let right_path = self.find_leaf_path(*root.clone().right.unwrap(), target, path_cp_right);
+            if !right_path.is_none(){
+                return right_path;
+            }
+        }
+        return None;
+    }
+    fn merkle_path_in_order(&self, merkle_root: String, merkle_tree: MerkleNode, mut proof_path: Vec<String>) -> Vec<(String, bool)>{
+        let mut in_order: Vec<(String, bool)> = Vec::new();
+        let mut sibling = proof_path.pop().unwrap();
+        let parent = self.find_leaf_parent(merkle_tree.clone(), sibling.clone()).unwrap();
+        in_order.push((sibling.clone(), false));
+        while !proof_path.is_empty() {
+            sibling = proof_path.pop().unwrap();
+            let parent = self.find_leaf_parent(merkle_tree.clone(), sibling.clone()).unwrap();
+            if let Some(ref left) = parent.left{
+                if left.clone().data == sibling{
+                    // is left child
+                    in_order.push((sibling.clone(), true));
+                }
+                else{
+                    in_order.push((sibling.clone(), false));
+                }
+            }
+        }
+        in_order
+    }
 }
 
 
@@ -152,7 +204,7 @@ impl MerkleTree{
 fn build_merkle_tree(){
     let mut tree = MerkleTree{
         root: None,
-        depth: 3
+        depth: 5
     };
 
     let transactions = vec![String::from("tx01"), String::from("tx02")];
@@ -164,172 +216,21 @@ fn build_merkle_tree(){
 
     let sibling = tree.find_leaf_sibling(parent.clone().unwrap(), String::from("tx01"));
     println!("tx01 sibling: {:?}", &sibling);
-}
 
-
-
-/* 
-
-construct_uint! {
-    pub struct U256(4); // 4 * 64 = 256 bits
-}
-
-fn hash_string(input: String) -> String{
-    digest(input)
-}
-
-fn hashLeftRight(left: String, right: String) -> String{
-    hash_string(left + &right)
-}
-
-#[derive(Debug, Clone)]
-struct MerkleNode{
-    data: String,
-    left: Option<Box<MerkleNode>>,
-    right: Option<Box<MerkleNode>>
-}
-
-fn build_merkle_tree(tx: Vec<String>) -> Option<MerkleNode>{
-    if tx.is_empty(){
-        return None;
+    let mut path = tree.find_leaf_path(tree.root.clone().unwrap(), String::from("tx01"), Vec::new()).unwrap();
+    println!("Path: {:?}", &path);
+    /*
+    println!("Path: {:?}", path);
+    let mut proof_path: Vec<String> = Vec::new();
+    for leaf in &path.clone()[1..path.len()]{
+        //proof_path.push(leaf.clone());
+        let leaf_parent = tree.find_leaf_parent(tree.clone().root.unwrap(), leaf.clone()).unwrap();
+        let leaf_sibling = tree.find_leaf_sibling(leaf_parent.clone(), leaf.clone()).unwrap();
+        //println!("Leaf: {}, sibling: {:?}", leaf, leaf_sibling.data);
+        proof_path.push(leaf_sibling.data);
     };
-    // turn every transaction into a node
-    let mut nodes = tx.into_iter()
-        .map(|t| MerkleNode {
-            data: t,
-            left: None,
-            right: None,
-        })
-        .collect::<Vec<_>>();
-    // Build tree from the bottom up
-    while nodes.len() > 1 {
-        // New vector to hold the parents of the current level.
-        let mut new_level = Vec::new();
+    */
+    let result = tree.merkle_path_in_order(tree.clone().root.unwrap().data, tree.clone().root.unwrap(), path);
 
-        // Process nodes in pairs. If there's an odd one out, it will be included in the next level as-is.
-        for pair in nodes.chunks_exact(2) {
-            let left = Box::new(pair[0].clone());
-            let right = Box::new(pair[1].clone());
-            new_level.push(MerkleNode {
-                data: hash_string(format!("{}{}", left.data, right.data)),
-                left: Some(left),
-                right: Some(right),
-            });
-        }
-
-        // Check if there's one unpaired node left and carry it over to the next level.
-        if nodes.len() % 2 != 0 {
-            new_level.push(nodes.last().unwrap().clone());
-        }
-
-        // Move up to the next level of the tree.
-        nodes = new_level;
-    }
-    // There's exactly one node left, the root of the Merkle tree
-    nodes.pop()
-
+    println!("Proof_path: {:?}", result);
 }
-// Tornado tree for Strings(hex) in Rust
-#[derive(Default)]
-struct TornadoTree{
-    nextIndex: u32,
-    currentRootIndex: u32,
-    levels: u32,
-    zero: Vec<String>,
-    filledSubtrees: HashMap<u32, String>,
-    roots: HashMap<u32, String>,
-    ROOT_HISTORY_SIZE: u32,
-    leafs: Vec<String>
-}
-impl TornadoTree{
-    fn insert(&mut self, leaf: String) -> u32{
-        self.leafs.push(leaf.clone());
-        let mut currentIndex: u32 = self.nextIndex;
-        let mut currentLevelHash: String = leaf;
-        let mut left: String = String::new();
-        let mut right: String = String::new();
-        for i in 0..self.levels{
-            if (currentIndex % 2 == 0){
-                left = currentLevelHash.clone();
-                right = self.zero[i as usize].clone();
-                self.filledSubtrees.insert(i, currentLevelHash.clone());
-            }
-            else{
-                left = self.filledSubtrees.get(&i).unwrap().clone();
-                right = currentLevelHash;
-            }
-            currentLevelHash = hashLeftRight(left, right);
-            currentIndex /= 2;
-        };
-        let newRootIndex: u32 = (self.currentRootIndex + 1) % self.ROOT_HISTORY_SIZE;
-        self.currentRootIndex = newRootIndex;
-        self.roots.insert(newRootIndex, currentLevelHash);
-        self.nextIndex = self.nextIndex + 1;
-        self.nextIndex
-    }
-    
-    fn calculateLevels(&mut self){
-        let mut zero: Vec<String> = Vec::new();
-        let zero_value: String = String::from("snark");
-        // first level hash
-        let mut current_hash: String = hash_string(zero_value.clone() + &zero_value);
-        zero.push(current_hash.clone());
-        // next level hashs
-        for i in 0..self.levels - 1{
-            current_hash = hash_string(current_hash.clone() + &current_hash);
-            zero.push(current_hash.clone());
-        };
-        self.zero = zero.clone();
-        self.roots.insert(0, zero[zero.len() - 1].clone());
-    }
-
-    fn getLastRoot(&self) -> String{
-        return self.roots[&self.currentRootIndex].clone();
-    }
-}
-
-#[test]
-fn tornado(){
-    let levels: u32 = 4;
-    const ROOT_HISTORY_SIZE: u32 = 30;
-    // construct empty tree from params
-    let mut tree = TornadoTree::default();
-    tree.levels = levels;
-    tree.ROOT_HISTORY_SIZE = ROOT_HISTORY_SIZE;
-    tree.calculateLevels();
-    println!("Root before insert: {:?}", tree.getLastRoot());
-    tree.insert(String::from("some_transaction_id"));
-    println!("Root after first insert: {:?}", tree.getLastRoot());
-    tree.insert(String::from("some_other_transaction_id"));
-    println!("Root after second insert: {:?}", tree.getLastRoot());
-
-    tree.insert(String::from("some_3rd_transaction"));
-    tree.insert(String::from("some_5th_transaction"));
-    println!("test: {:?}", tree.filledSubtrees);
-    println!("Leafs: {:?}", tree.leafs);
-    let tx = vec![String::from("some_tx"); 11];
-    let full_tree = build_merkle_tree(tx.clone());
-    println!("Input tx: {:?}", tx);
-    println!("Full tree: {:?}", full_tree);
-}
-
-/* What's to be proven
-    * valid merkle path computation (assert | == root)
-*/
-
-/* How Tornadocash works
-    * deposit => add leaf to preimage of tree
-    * withdraw => construct full merkle tree, prove path for a known leaf
-    * the transaction itself is not stored on-chain, only a commitment (hash)
-    * knowing the preimage of the hash and being able to prove the path makes you elible to withdraw
-*/
-
-/* Construct full merkle tree
-    * Take leafs from tornado tree
-    * Build merkle tree bottom-up
-    * obtain proof path
-    * generate zk-proof for merkle path
-*/
-
-
-*/
