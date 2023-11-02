@@ -98,6 +98,53 @@ impl MerkleTree{
 
         // return here
     }
+    // find the sibling of a leaf -> takes parent as input
+    fn find_leaf_sibling(&self, parent: MerkleNode, target: String) -> Option<MerkleNode>{
+        if let Some(ref left) = parent.left{
+            if parent.clone().left.unwrap().data == target{
+                return Some(*parent.clone().right.unwrap());
+            }
+            else{
+                return Some(*parent.clone().left.unwrap());
+            }
+        }
+        else{
+            return None;
+        }
+    }
+    // find the parent for a leaf in the tree
+    fn find_leaf_parent(&self, root: MerkleNode, target: String) -> Option<MerkleNode>{
+        // check if target in children
+        if let Some(ref left) = root.left{
+            if root.clone().left.unwrap().data == target{
+                return Some(root);
+            }
+        }
+        if let Some(ref right) = root.right{
+            if root.clone().right.unwrap().data == target{
+                return Some(root);
+            }
+        }
+        /*
+        if root.clone().left.unwrap().data == target || root.clone().right.unwrap().data == target{
+            // return node with child
+            return Some(root);
+        };
+        */
+        if let Some(ref left) = root.left{
+            let left_node = self.find_leaf_parent(*root.clone().left.unwrap(), target.clone());
+            if !left_node.is_none(){
+                return  left_node;
+            }
+        }
+        if let Some(ref right) = root.right{
+            let right_node = self.find_leaf_parent(*root.clone().right.unwrap(), target.clone());
+            if !right_node.is_none(){
+                return right_node;
+            }
+        }
+        return None
+    }
 }
 
 
@@ -110,8 +157,13 @@ fn build_merkle_tree(){
 
     let transactions = vec![String::from("tx01"), String::from("tx02")];
     tree.build(transactions);
-
     println!("Tree root: {:?}", tree.root);
+
+    let parent = tree.find_leaf_parent(tree.root.clone().unwrap(), String::from("tx01"));
+    println!("tx01 parent: {:?}", &parent);
+
+    let sibling = tree.find_leaf_sibling(parent.clone().unwrap(), String::from("tx01"));
+    println!("tx01 sibling: {:?}", &sibling);
 }
 
 
