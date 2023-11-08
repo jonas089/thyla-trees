@@ -1,4 +1,3 @@
-// insert, get
 use std::{collections::HashMap};
 use uint::construct_uint;
 mod deprecated;
