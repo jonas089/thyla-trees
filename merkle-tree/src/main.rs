@@ -1,5 +1,5 @@
 extern crate sha256;
-use sha256::{digest, try_digest};
+use sha2::{Sha256, Digest};
 // insert, get
 use std::{collections::HashMap};
 use uint::construct_uint;
@@ -9,8 +9,11 @@ fn main(){
     panic!("Run cargo test -- --nocapture instead!");
 }
 
-fn hash_bytes(input: Vec<u8>) -> Vec<u8>{
-    digest(input).into_bytes()
+fn hash_bytes(input: Vec<u8>) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(input);
+    let result = hasher.finalize();
+    result.to_vec()
 }
 
 fn hashLeftRight(mut left: Vec<u8>, mut right: Vec<u8>) -> Vec<u8>{
@@ -210,7 +213,7 @@ fn build_merkle_tree(){
         depth: 5
     };
 
-    let transactions = vec![vec![1;64], vec![2;64]];
+    let transactions = vec![vec![1;32], vec![2;32]];
     tree.build(transactions.clone());
     println!("Tree root: {:?}", tree.root);
 
@@ -234,6 +237,15 @@ fn build_merkle_tree(){
     for (sibling, indicator) in result.clone(){
         if indicator == false{
             current_hash = hashLeftRight(current_hash, sibling);
+            println!("Current Hash: {:?}", current_hash);
+
+            let current_hash_hex: Vec<String> = current_hash.clone().iter()
+            .map(|byte| format!("0x{:02x}", byte))
+            .collect();
+
+            println!("Current hash as hex: {:?}", current_hash_hex);
+
+
         }
         else{
             current_hash = hashLeftRight(sibling, current_hash);
