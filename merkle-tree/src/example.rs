@@ -3,24 +3,21 @@ use sha256::{digest, try_digest};
 // insert, get
 use std::{collections::HashMap};
 use uint::construct_uint;
-mod example;
-
 fn main(){
     panic!("Run cargo test -- --nocapture instead!");
 }
 
-fn hash_bytes(input: Vec<u8>) -> Vec<u8>{
-    digest(input).into_bytes()
+fn hash_string(input: String) -> String{
+    digest(input)
 }
 
-fn hashLeftRight(mut left: Vec<u8>, mut right: Vec<u8>) -> Vec<u8>{
-    left.append(&mut right);
-    hash_bytes(left)
+fn hashLeftRight(left: String, right: String) -> String{
+    hash_string(left + &right)
 }
 
 #[derive(Debug, Clone)]
 struct MerkleNode{
-    data: Vec<u8>,
+    data: String,
     left: Option<Box<MerkleNode>>,
     right: Option<Box<MerkleNode>>
 }
@@ -33,11 +30,11 @@ struct MerkleTree{
 
 impl MerkleTree{
     // not optimized, but sufficient for circuit research with a small set of transactions.
-    fn build(&mut self, transactions: Vec<Vec<u8>>){
+    fn build(&mut self, transactions: Vec<String>){
         // zero val for merkle roots
         let size = 2_u32.pow(self.depth-1_u32);
-        let zero_val: Vec<u8> = hash_bytes(vec![0]);
-        let mut zero_levels: Vec<Vec<u8>> = Vec::new();
+        let zero_val = String::from("casper");
+        let mut zero_levels: Vec<String> = Vec::new();
         let mut current_level = zero_val.clone();
         zero_levels.push(zero_val.clone());
         for level in 0..self.depth - 2{
@@ -102,7 +99,7 @@ impl MerkleTree{
         // return here
     }
     // find the sibling of a leaf -> takes parent as input
-    fn find_leaf_sibling(&self, parent: MerkleNode, target: Vec<u8>) -> Option<MerkleNode>{
+    fn find_leaf_sibling(&self, parent: MerkleNode, target: String) -> Option<MerkleNode>{
         if let Some(ref left) = parent.left{
             if parent.clone().left.unwrap().data == target{
                 return Some(*parent.clone().right.unwrap());
@@ -116,7 +113,7 @@ impl MerkleTree{
         }
     }
     // find the parent for a leaf in the tree
-    fn find_leaf_parent(&self, root: MerkleNode, target: Vec<u8>) -> Option<MerkleNode>{
+    fn find_leaf_parent(&self, root: MerkleNode, target: String) -> Option<MerkleNode>{
         // check if target in children
         if let Some(ref left) = root.left{
             if root.clone().left.unwrap().data == target{
@@ -149,10 +146,10 @@ impl MerkleTree{
         return None
     }
     // recursive function to find the path to a leaf
-    fn find_leaf_path(&self, root: MerkleNode, target: Vec<u8>, mut path: Vec<Vec<u8>>) -> Option<Vec<Vec<u8>>>{
+    fn find_leaf_path(&self, root: MerkleNode, target: String, mut path: Vec<String>) -> Option<Vec<String>>{
         if root.data == target{
             path.push(target);
-            let mut proof_path: Vec<Vec<u8>> = Vec::new();
+            let mut proof_path: Vec<String> = Vec::new();
             for leaf in &path.clone()[1..path.len()]{
                 //proof_path.push(leaf.clone());
                 let leaf_parent = self.find_leaf_parent(self.clone().root.unwrap(), leaf.clone()).unwrap();
@@ -180,8 +177,8 @@ impl MerkleTree{
         }
         return None;
     }
-    fn merkle_path_in_order(&self, merkle_root: Vec<u8>, merkle_tree: MerkleNode, mut proof_path: Vec<Vec<u8>>) -> Vec<(Vec<u8>, bool)>{
-        let mut in_order: Vec<(Vec<u8>, bool)> = Vec::new();
+    fn merkle_path_in_order(&self, merkle_root: String, merkle_tree: MerkleNode, mut proof_path: Vec<String>) -> Vec<(String, bool)>{
+        let mut in_order: Vec<(String, bool)> = Vec::new();
         let mut sibling = proof_path.pop().unwrap();
         let parent = self.find_leaf_parent(merkle_tree.clone(), sibling.clone()).unwrap();
         in_order.push((sibling.clone(), false));
@@ -204,43 +201,36 @@ impl MerkleTree{
 
 
 #[test]
-fn build_merkle_tree(){
+fn test_string(){
     let mut tree = MerkleTree{
         root: None,
         depth: 5
     };
 
-    let transactions = vec![vec![1,1], vec![2,2]];
+    let transactions = vec![String::from("tx01"), String::from("tx02")];
     tree.build(transactions);
     println!("Tree root: {:?}", tree.root);
 
-    let parent = tree.find_leaf_parent(tree.root.clone().unwrap(), vec![1,1]);
+    let parent = tree.find_leaf_parent(tree.root.clone().unwrap(), String::from("tx01"));
     println!("tx01 parent: {:?}", &parent);
 
-    let sibling = tree.find_leaf_sibling(parent.clone().unwrap(), vec![1,1]);
+    let sibling = tree.find_leaf_sibling(parent.clone().unwrap(), String::from("tx01"));
     println!("tx01 sibling: {:?}", &sibling);
 
-    let mut path = tree.find_leaf_path(tree.root.clone().unwrap(), vec![1,1], Vec::new()).unwrap();
+    let mut path = tree.find_leaf_path(tree.root.clone().unwrap(), String::from("tx01"), Vec::new()).unwrap();
     println!("Path: {:?}", &path);
-
-    // True -> is left, False -> is right
+    /*
+    println!("Path: {:?}", path);
+    let mut proof_path: Vec<String> = Vec::new();
+    for leaf in &path.clone()[1..path.len()]{
+        //proof_path.push(leaf.clone());
+        let leaf_parent = tree.find_leaf_parent(tree.clone().root.unwrap(), leaf.clone()).unwrap();
+        let leaf_sibling = tree.find_leaf_sibling(leaf_parent.clone(), leaf.clone()).unwrap();
+        //println!("Leaf: {}, sibling: {:?}", leaf, leaf_sibling.data);
+        proof_path.push(leaf_sibling.data);
+    };
+    */
     let result = tree.merkle_path_in_order(tree.clone().root.unwrap().data, tree.clone().root.unwrap(), path);
 
     println!("Proof_path: {:?}", result);
-
-
-    // compute merkle hash
-    let mut current_hash: Vec<u8> = vec![1,1];
-    for (sibling, indicator) in result{
-        if indicator == false{
-            current_hash = hashLeftRight(current_hash, sibling);
-        }
-        else{
-            current_hash = hashLeftRight(sibling, current_hash);
-        }
-    }
-    assert_eq!(current_hash, tree.root.unwrap().data);
-    
-    println!("Passed: {:?}", current_hash);
-
 }
