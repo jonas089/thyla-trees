@@ -210,17 +210,17 @@ fn build_merkle_tree(){
         depth: 5
     };
 
-    let transactions = vec![vec![1,1], vec![2,2]];
-    tree.build(transactions);
+    let transactions = vec![vec![1;64], vec![2;64]];
+    tree.build(transactions.clone());
     println!("Tree root: {:?}", tree.root);
 
-    let parent = tree.find_leaf_parent(tree.root.clone().unwrap(), vec![1,1]);
+    let parent = tree.find_leaf_parent(tree.root.clone().unwrap(), transactions.clone()[0].clone());
     println!("tx01 parent: {:?}", &parent);
 
-    let sibling = tree.find_leaf_sibling(parent.clone().unwrap(), vec![1,1]);
+    let sibling = tree.find_leaf_sibling(parent.clone().unwrap(), transactions.clone()[0].clone());
     println!("tx01 sibling: {:?}", &sibling);
 
-    let mut path = tree.find_leaf_path(tree.root.clone().unwrap(), vec![1,1], Vec::new()).unwrap();
+    let mut path = tree.find_leaf_path(tree.root.clone().unwrap(), transactions.clone()[0].clone(), Vec::new()).unwrap();
     println!("Path: {:?}", &path);
 
     // True -> is left, False -> is right
@@ -230,8 +230,8 @@ fn build_merkle_tree(){
 
 
     // compute merkle hash
-    let mut current_hash: Vec<u8> = vec![1,1];
-    for (sibling, indicator) in result{
+    let mut current_hash: Vec<u8> = transactions.clone()[0].clone();
+    for (sibling, indicator) in result.clone(){
         if indicator == false{
             current_hash = hashLeftRight(current_hash, sibling);
         }
@@ -239,8 +239,18 @@ fn build_merkle_tree(){
             current_hash = hashLeftRight(sibling, current_hash);
         }
     }
-    assert_eq!(current_hash, tree.root.unwrap().data);
+    assert_eq!(current_hash, tree.clone().root.unwrap().data);
     
     println!("Passed: {:?}", current_hash);
+
+
+    println!("Transaction to prove: {:?}", transactions[0]);
+
+    for (index, (sibling, indicator)) in result.into_iter().enumerate(){
+        println!("Sibling #{:?}: {:?} : {:?}", index, sibling, indicator);
+    }
+
+
+    println!("Merkle root: {:?}", tree.clone().root.unwrap().data);
 
 }
