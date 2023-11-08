@@ -1,0 +1,1 @@
+pub const DEFAULT_DEPTH: u32 = 5;

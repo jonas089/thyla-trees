@@ -1,3 +1,5 @@
+/* String implementation, kept for reference
+
 extern crate sha256;
 use sha256::{digest, try_digest};
 // insert, get
@@ -234,3 +236,4 @@ fn test_string(){
 
     println!("Proof_path: {:?}", result);
 }
+*/

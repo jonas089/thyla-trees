@@ -1,24 +1,14 @@
-extern crate sha256;
-use sha2::{Sha256, Digest};
 // insert, get
 use std::{collections::HashMap};
 use uint::construct_uint;
-mod example;
+mod deprecated;
+mod helpers;
+use helpers::{hash_bytes, hashLeftRight};
+mod config;
+use config::DEFAULT_DEPTH;
 
 fn main(){
     panic!("Run cargo test -- --nocapture instead!");
-}
-
-fn hash_bytes(input: Vec<u8>) -> Vec<u8> {
-    let mut hasher = Sha256::new();
-    hasher.update(input);
-    let result = hasher.finalize();
-    result.to_vec()
-}
-
-fn hashLeftRight(mut left: Vec<u8>, mut right: Vec<u8>) -> Vec<u8>{
-    left.append(&mut right);
-    hash_bytes(left)
 }
 
 #[derive(Debug, Clone)]
@@ -48,7 +38,6 @@ impl MerkleTree{
             zero_levels.push(_hash.clone());
             current_level = _hash;
         };
-        println!("Zero levels: {:?}", zero_levels);
         let mut levels: Vec<Vec<MerkleNode>> = Vec::new();
         let mut bottom_level: Vec<MerkleNode> = Vec::new();
         for tx in transactions{
@@ -66,21 +55,13 @@ impl MerkleTree{
         }
 
         let mut current_level = bottom_level.clone();
-        println!("Bottom level: {:?}", &bottom_level);
         // start at first hash (one level above tx data)
         let mut current_level_height = 1;
         while current_level.len() > 1{
-            println!("Current Level: {:?}", &current_level);
-
-
             while current_level.len() % 2 != 0{
                 current_level.push(MerkleNode { data: zero_levels[current_level_height].clone(), left: None, right: None });
             }
             let mut new_level: Vec<MerkleNode> = Vec::new();
-
-
-
-            println!("Len of current level: {:?}", &current_level.len());
             for i in (0..current_level.len()).step_by(2){
                 let left: MerkleNode = current_level[i].clone();
                 let right: MerkleNode = current_level[i+1].clone();
@@ -210,59 +191,36 @@ impl MerkleTree{
 fn build_merkle_tree(){
     let mut tree = MerkleTree{
         root: None,
-        depth: 5
+        depth: DEFAULT_DEPTH
     };
 
     let transactions = vec![vec![1;32], vec![2;32]];
     tree.build(transactions.clone());
-    println!("Tree root: {:?}", tree.root);
-
     let parent = tree.find_leaf_parent(tree.root.clone().unwrap(), transactions.clone()[0].clone());
-    println!("tx01 parent: {:?}", &parent);
-
     let sibling = tree.find_leaf_sibling(parent.clone().unwrap(), transactions.clone()[0].clone());
-    println!("tx01 sibling: {:?}", &sibling);
-
     let mut path = tree.find_leaf_path(tree.root.clone().unwrap(), transactions.clone()[0].clone(), Vec::new()).unwrap();
-    println!("Path: {:?}", &path);
-
     // True -> is left, False -> is right
     let result = tree.merkle_path_in_order(tree.clone().root.unwrap().data, tree.clone().root.unwrap(), path);
-
-    println!("Proof_path: {:?}", result);
-
-
     // compute merkle hash
     let mut current_hash: Vec<u8> = transactions.clone()[0].clone();
     for (sibling, indicator) in result.clone(){
         if indicator == false{
             current_hash = hashLeftRight(current_hash, sibling);
-            println!("Current Hash: {:?}", current_hash);
-
             let current_hash_hex: Vec<String> = current_hash.clone().iter()
             .map(|byte| format!("0x{:02x}", byte))
             .collect();
-
-            println!("Current hash as hex: {:?}", current_hash_hex);
-
-
         }
         else{
             current_hash = hashLeftRight(sibling, current_hash);
         }
     }
-    assert_eq!(current_hash, tree.clone().root.unwrap().data);
     
-    println!("Passed: {:?}", current_hash);
-
-
+    assert_eq!(current_hash, tree.clone().root.unwrap().data);
+    // output merkle proof information
     println!("Transaction to prove: {:?}", transactions[0]);
-
     for (index, (sibling, indicator)) in result.into_iter().enumerate(){
         println!("Sibling #{:?}: {:?} : {:?}", index, sibling, indicator);
     }
-
-
     println!("Merkle root: {:?}", tree.clone().root.unwrap().data);
 
 }

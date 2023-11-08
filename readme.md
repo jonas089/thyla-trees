@@ -1,170 +1,61 @@
-# noir-rollup - a conceptual noir circuit for transaction rollups 
-
-# This project is not done / not ready for use! 
-
-The purpose of this repo is to explore potential zk rollup implementations in noir.
-
-Circuit [here](https://github.com/jonas089/noir-rollup/tree/master/circuit/src)
-
-# Tornado cash implementation (On-chain)
-*Arkworks* -> wait for Noir backend support of `Bulletproofs`
-```
-Merkle tree is not constructed on-chain
-Only the merkle path is proven on-chain (using some circuit)
-! Tornado cash only supports deposit and withdrawl / no transfer.
-```
-
-# Slick implementation
-
-Merkle path proof design:
-
-```
-Merkle path consists of nodes and sibling nodes for each transaction.
-Proof is generated for each transaction's inclusion in the merkle tree.
-For that every transaction's merkle path and the merkle root are required.
-```
-
-Experimental merkle tree [code](https://github.com/jonas089/noir-rollup/blob/master/merkle-tree/src/main.rs)
-
-❗ How is output state proven / how are balances calculated?
+# Zero knowledge transaction rollup written in Rust and Noir
 
 
-# Suboptimal implementation - discontinued
+# Rust Merkle tree
+Found in `merkle-tree/src/main.rs`
 
-```
-Circuit takes all new transaction data and accounting state
-as input. Constraint system does not support dynamic datatypes.
-Therefore it's not feasible to implement a circuit for a
-growing database of accounts.
-
-Prove inclusion in a merkle tree instead.
-```
-
-suboptimal [code](https://github.com/jonas089/noir-rollup/tree/master/circuits/experiments)
-
-Problems when taking all transactions and state as input:
-```
-❄️ All inputs to the circuit must be of fixed length
-    ❄️ pub_x ✅ 
-    ❄️ pub_y ✅ 
-    ❄️ recipients ✅ 
-    ❄️ signatures ✅ 
-    ❄️ amounts✅  
-    ❄️ balances ❌
-    ❄️ accounts ❌
-accounts => balances 1:1
-```
-❗ The amount of accounts supported by this circuit currently needs to be fixed.
-
-❗ This is not suitable for a real-world transaction system.
-
-
-
-# 1. Typeology
-
-## 1.1. Public inputs
-
-```Rust
-    balances: [u64;n], 
-    accounts: [[u8;32];n]
-```
-
-## 1.2. Private inputs
-
-
-⚠️ **WARNING:** For development and testing some datatypes are changed temporarily
-
-
-```Rust
-    sender_x: [[u8;32];n],
-    sender_y: [[u8;32];n],
-    recipient: [[u8;32];n],
-    amount: [[u8;8];n],
-    // or amount: [[u64;1];n]
-```
-
-## 1.2. Public outputs
-```Rust
-    /* To be defined
-        * public outputs will include
-            * new merkle root
-            * new balances
-        -> return statement
-            * [[T;n];n] or [[[T;n];n];n]
-    */
-```
-
-## 2. Structs
-
-## StateMachine (reactor)
-
-Represents state (public and private inputs)
-
-Methods:
-
-```Rust
-build_message
-process_message
-update_balance
-```
-
-1. build_message
-
-```
-Uses message data to construct the inputs to the signature verifier (for a given transaction at index i).
-```
-
-2. process_message
-
-```
-Applies state transitions according to the message data (includes index) -> transactions are processed one-by-one.
-Will revert should an invalid signature appear.
-```
-
-3. update_balance
-
-```
-returns a new StateMachine with the updated balance infromation.
-```
-
-## Message
-
-Represents a transaction
-
-```Rust
-    index: u8,
-    recipient: [u8;32],
-    amount: [u8;2],
-    message: [u8],
-    message_hash: [u8;32]
-```
-
-# Use with Nargo client
-
-0. Run tests
+To generate a merkle proof for a transaction using the default configuration, run:
 
 ```bash
-cd circuits/experiments
+    cargo test build_merkle_tree -- --nocapture
+```
+
+This command will output all information required by the prover.
+
+Example output:
+
+```
+Transaction to prove: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+Sibling #0: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2] : false
+Sibling #1: [178, 137, 222, 169, 44, 165, 171, 165, 242, 225, 137, 26, 26, 241, 27, 226, 121, 20, 196, 136, 84, 219, 15, 229, 180, 187, 149, 193, 55, 224, 242, 214] : false
+Sibling #2: [248, 211, 204, 204, 180, 196, 230, 213, 226, 254, 251, 255, 140, 104, 170, 245, 141, 86, 82, 142, 59, 109, 142, 191, 7, 180, 33, 12, 239, 230, 161, 241] : false
+Sibling #3: [175, 132, 242, 248, 185, 9, 188, 62, 34, 213, 240, 199, 176, 177, 75, 99, 187, 215, 70, 226, 72, 67, 45, 66, 103, 218, 50, 31, 1, 52, 216, 168] : false
+Merkle root: [122, 111, 152, 168, 16, 14, 202, 82, 72, 133, 213, 28, 57, 178, 64, 160, 4, 58, 202, 252, 110, 5, 87, 19, 48, 234, 78, 220, 229, 87, 141, 223]
+```
+
+## Left / Right
+`false` or `true` answers the question `is_left`. If `true`, the sibling is on the left side and if `false` the sibling is on the right side of the tree (relative to current position in the tree). 
+
+L/R is relevant information for the prover. The L/R information for each level is passed as either `0` or `1` as part of the `positions` input of the circuit.
+
+## Tree Depth
+
+The default depth of the merkle tree is 5. The depth can be adjusted by overriding the `DEFAULT_DEPTH` constant in `merkle-tree/src/config.rs`
+
+## Optimization
+
+Merkle tree functions can be further optimized to support a higher transaction throughput.
+
+# Noir circuit
+
+The circuit to prove merkle paths can be found in `circuits/merkleproofs/src/main.rs`. It takes as input the following information:
+
+```
+1. The transaction to be proven
+2. Siblings for each level in the tree
+3. Position of each sibling for each level in the tree
+4. Current merkle root
+```
+
+To run the circuit with the sample input from the sample tree, run:
+
+```
 nargo test
 ```
 
-1. Build the circuit
+in the circuit directory.
 
-```bash
-nargo check
-```
+## What the noir proof means
 
-2. Provide circuit Inputs -> edit Prover.toml
+A proof verified by this circuit implies a high probability that one knows a valid transaction in the given merkle tree with the provided merkle root.
 
-3. Generate a proof
-
-```bash
-nargo prove
-```
-
-4. verify a proof
-
-```bash
-
-nargo verify
-```
