@@ -39,7 +39,7 @@ fn combine(left: [u8; 32], right: [u8; 32]) -> [u8]{
 }
 
 // combine RL
-fn combine_reverse(right: [u8; 32], left: [u8; 32]) -> [u8]{
+fn combine_reverse(left: [u8; 32], right: [u8; 32]) -> [u8]{
     let mut combined_vec: Vec<u8> = Vec::new();
     for byte in right{
         combined_vec.push(byte);
