@@ -75,8 +75,8 @@ impl MerkleTree{
                     left: Some(Box::new(left.clone())), 
                     right: Some(Box::new(right.clone()))}
                 );
-                levels.push(new_level.clone());
             };
+            levels.push(new_level.clone());
             current_level = new_level.clone();
             current_level_height += 1;
         };
