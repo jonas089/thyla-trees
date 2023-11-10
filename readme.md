@@ -7,7 +7,7 @@ Found in `merkle-tree/src/main.rs`
 To generate a merkle proof for a transaction using the default configuration, run:
 
 ```bash
-    cargo test build_merkle_tree -- --nocapture
+    cargo test produce_merkle_proof -- --nocapture
 ```
 
 This command will output all information required by the prover.
