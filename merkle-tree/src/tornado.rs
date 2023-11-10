@@ -20,24 +20,28 @@ impl TornadoTree{
         };
         self.zero_levels = zero_levels;
     }
-    fn add_leaf(&mut self, leaf: Vec<u8>) {
+    fn add_leaf(&mut self, leaf: Vec<u8>) -> Vec<(Vec<u8>, bool)> {
+        let mut proof_path: Vec<(Vec<u8>, bool)> = vec![(leaf.clone(), false)];
         let mut current_index = self.index;
-        let mut current_hash = leaf.clone();
+        let mut current_hash: Vec<u8> = leaf.clone();
 
         for i in 0..self.depth {
             if current_index % 2 == 0 {
                 // If index is even, left is the new leaf or its hash, right is the zero node at this level
                 self.filled[i] = current_hash.clone(); // push the leaf or its hash
                 current_hash = hashLeftRight(current_hash, self.zero_levels[i].clone());
+                proof_path.push((self.zero_levels[i].clone(), true));
             } else {
                 // If index is odd, left is the previous leaf or its hash at this level, right is the new leaf or its hash
                 let left = self.filled[i].clone();
-                current_hash = hashLeftRight(left, current_hash);
+                current_hash = hashLeftRight(left.clone(), current_hash.clone());
+                proof_path.push((left, false));
             }
+            println!("Expected current hash: {:?}", &current_hash);
             current_index /= 2;
         }
-
         self.index += 1;
+        proof_path
     }
 }
 
@@ -52,16 +56,32 @@ fn test_tornado(){
         depth: 3
     };
     tree.calculate_zero_levels();
-    tree.add_leaf(vec![1;32]);
-    tree.root_history.push(tree.filled[tree.filled.len() - 1].clone());
-    tree.add_leaf(vec![2;32]);
-    tree.root_history.push(tree.filled[tree.filled.len() - 1].clone());
-    tree.add_leaf(vec![3;32]);
-    tree.root_history.push(tree.filled[tree.filled.len() - 1].clone());
-    //tree.add_leaf(vec![4;32]);
-    println!("Tree: {:?}", tree.filled);
 
+    let mut proof_path: Vec<(Vec<u8>, bool)> = tree.add_leaf(vec![1;32]);
+
+    tree.root_history.push(tree.filled[tree.filled.len() - 1].clone());
+
+    println!("Proof path: {:?}", proof_path);
     println!("Root history: {:?}", &tree.root_history);
+
+    println!("Merkle tree: {:?}", &tree.filled);
+
+    let merkle_root = &tree.filled.pop().unwrap();
+    // true -> right, false -> left
+    println!("Merkle root: {:?}", &merkle_root);
+
+    let mut current_hash = proof_path[0].clone().0;
+    for i in 1..proof_path.len() - 1{
+        if &proof_path[i].1 == &true{
+            current_hash = hashLeftRight(current_hash, proof_path[i].clone().0);
+        }
+        else{
+            current_hash = hashLeftRight(proof_path[i].clone().0, current_hash);
+        }
+        println!("Current Hash: {:?}", current_hash);
+    }
+
+    assert_eq!(&current_hash, merkle_root);
 }
 
 /*
