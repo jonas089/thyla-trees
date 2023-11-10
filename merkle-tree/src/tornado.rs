@@ -30,14 +30,15 @@ impl TornadoTree{
                 // If index is even, left is the new leaf or its hash, right is the zero node at this level
                 self.filled[i] = current_hash.clone(); // push the leaf or its hash
                 current_hash = hashLeftRight(current_hash, self.zero_levels[i].clone());
-                proof_path.push((self.zero_levels[i].clone(), true));
+                if i < self.depth - 1{
+                    proof_path.push((self.zero_levels[i].clone(), true));
+                }
             } else {
                 // If index is odd, left is the previous leaf or its hash at this level, right is the new leaf or its hash
                 let left = self.filled[i].clone();
                 current_hash = hashLeftRight(left.clone(), current_hash.clone());
                 proof_path.push((left, false));
             }
-            println!("Expected current hash: {:?}", &current_hash);
             current_index /= 2;
         }
         self.index += 1;
@@ -51,34 +52,25 @@ fn test_tornado(){
         zero_node: hash_bytes(vec![0;32]),
         zero_levels: Vec::new(),
         root_history: Vec::new(),
-        filled: vec![vec![], vec![], vec![]],
+        filled: vec![vec![], vec![], vec![], vec![], vec![]],
         index: 0,
-        depth: 3
+        depth: 5
     };
     tree.calculate_zero_levels();
-
-    let mut proof_path: Vec<(Vec<u8>, bool)> = tree.add_leaf(vec![1;32]);
-
-    tree.root_history.push(tree.filled[tree.filled.len() - 1].clone());
-
+    let mut proof_path: Vec<(Vec<u8>, bool)> = tree.add_leaf(vec![242, 69, 81, 38, 252, 95, 197, 129, 177, 105, 42, 137, 129, 73, 125, 148, 130, 204, 83, 82, 126, 104, 106, 71, 156, 96, 55, 233, 132, 103, 128, 11]);
     println!("Proof path: {:?}", proof_path);
-    println!("Root history: {:?}", &tree.root_history);
-
-    println!("Merkle tree: {:?}", &tree.filled);
-
     let merkle_root = &tree.filled.pop().unwrap();
     // true -> right, false -> left
     println!("Merkle root: {:?}", &merkle_root);
 
     let mut current_hash = proof_path[0].clone().0;
-    for i in 1..proof_path.len() - 1{
+    for i in 1..proof_path.len(){
         if &proof_path[i].1 == &true{
             current_hash = hashLeftRight(current_hash, proof_path[i].clone().0);
         }
         else{
             current_hash = hashLeftRight(proof_path[i].clone().0, current_hash);
         }
-        println!("Current Hash: {:?}", current_hash);
     }
 
     assert_eq!(&current_hash, merkle_root);

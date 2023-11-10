@@ -55,7 +55,15 @@ nargo test
 
 in the circuit directory.
 
-## What the noir proof means
+# What the noir proof means
 
 A proof verified by this circuit implies a high probability that one knows a valid transaction in the given merkle tree with the provided merkle root.
+
+
+# L2 rollup concept
+
+## Rollup circuit
+The rollup circuit can generate proofs for the merkle path and the validity of message signatures.
+
+A chunk of transactions is processed and the proof and root hash are committed.
 
