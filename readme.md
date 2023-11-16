@@ -67,3 +67,12 @@ The rollup circuit can generate proofs for the merkle path and the validity of m
 
 A chunk of transactions is processed and the proof and root hash are committed.
 
+### Checklist
+
+Does the circuit process:?
+```
+- the signature?
+- the merkle proof?
+- the state transition?
+- the message hash?
+```

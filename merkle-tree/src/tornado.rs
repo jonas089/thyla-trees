@@ -3,24 +3,24 @@ use std::thread::current;
 use crate::helpers::{hashLeftRight, hash_bytes};
 
 #[derive(Debug, Clone, PartialEq)]
-struct TornadoTree{
-    zero_node: Vec<u8>,
-    zero_levels: Vec<Vec<u8>>,
-    root_history: Vec<Vec<u8>>,
-    filled: Vec<Vec<u8>>,
-    index: usize,
-    depth: usize
+pub struct TornadoTree{
+    pub zero_node: Vec<u8>,
+    pub zero_levels: Vec<Vec<u8>>,
+    pub root_history: Vec<Vec<u8>>,
+    pub filled: Vec<Vec<u8>>,
+    pub index: usize,
+    pub depth: usize
 }
 
 impl TornadoTree{
-    fn calculate_zero_levels(&mut self){
+    pub fn calculate_zero_levels(&mut self){
         let mut zero_levels: Vec<Vec<u8>> = vec![self.zero_node.clone()];
         for i in 0..self.depth - 1{
             zero_levels.push(hashLeftRight(zero_levels[zero_levels.len()-1].clone(), zero_levels[zero_levels.len()-1].clone()));
         };
         self.zero_levels = zero_levels;
     }
-    fn add_leaf(&mut self, leaf: Vec<u8>) -> Vec<(Vec<u8>, bool)> {
+    pub fn add_leaf(&mut self, leaf: Vec<u8>) -> Vec<(Vec<u8>, bool)> {
         let mut proof_path: Vec<(Vec<u8>, bool)> = vec![(leaf.clone(), false)];
         let mut current_index = self.index;
         let mut current_hash: Vec<u8> = leaf.clone();
