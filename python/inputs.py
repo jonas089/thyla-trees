@@ -98,7 +98,6 @@ recipient = list("jonas".encode('utf-8'))
 amount = list("10".encode('utf-8'))
 message_combined = recipient + amount
 print("Message_Bytes: ", message_combined)
-
 recipient = [57, 141, 121, 60, 115, 189, 115, 103, 174, 6, 108, 20, 114, 134, 156, 80, 7, 222, 7, 107, 196, 2, 216, 251, 119, 174, 151, 31, 19, 46, 39, 92]
 recipient_bytes = bytes(recipient)
 

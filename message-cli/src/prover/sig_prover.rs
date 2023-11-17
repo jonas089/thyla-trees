@@ -3,6 +3,7 @@ use k256::{
     SecretKey,
 };
 use rand_core::OsRng;
+use sha2::{Digest, Sha256};
 
 
 fn generate_signature_inputs(){
@@ -20,10 +21,12 @@ fn generate_signature_inputs(){
     */
     // Signing
     let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
-    let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
-    todo!("Sha256 of message for fixed len!");
-    
-    let signature: Signature = signing_key.sign(message);
+
+    let message = "jonas10";
+    let mut sha = Sha256::new();
+    sha.update(message);
+    let hashed_message = sha.finalize();
+    let signature: Signature = signing_key.sign(&hashed_message);
     // Verification
     use k256::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
     let verifying_key = VerifyingKey::from(&signing_key); // Serialize with `::to_encoded_point()`
@@ -37,12 +40,12 @@ fn generate_signature_inputs(){
     println!("Y: {:?}", verifying_key_y);
     println!("Sig: {:?}", signature.to_bytes());
 
-    println!("Message bytes: {:?}", message);
+    println!("Message bytes: {:?}", &hashed_message);
+    println!("Message length: {:?}", &hashed_message.len());
 }
 
 
 #[test]
 fn test(){
     generate_signature_inputs();
-
 }

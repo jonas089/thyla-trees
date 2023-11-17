@@ -1,13 +1,19 @@
 use std::{collections::HashMap};
 use uint::construct_uint;
-mod deprecated;
-mod optimized;
 pub mod helpers;
-//use helpers::{hash_bytes, hashLeftRight};
-mod config;
-//use config::{DEFAULT_DEPTH, TEST_DEPTH};
-mod error;
 pub mod tornado;
+
+
+
+/* Artifacts that I want to keep for now */
+
+
+// mod deprecated;
+// mod optimized;
+//use helpers::{hash_bytes, hashLeftRight};
+// mod config;
+//use config::{DEFAULT_DEPTH, TEST_DEPTH};
+// mod error;
 
 
 /*

@@ -10,3 +10,4 @@ merkle-tree = {path="../merkle-tree"}
 
 k256 = "0.13.2"
 rand_core = "0.6.4"
+sha2 = "0.10.8"

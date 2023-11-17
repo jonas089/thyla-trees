@@ -296,6 +296,7 @@ dependencies = [
  "k256",
  "merkle-tree",
  "rand_core",
+ "sha2",
 ]
 
 [[package]]
