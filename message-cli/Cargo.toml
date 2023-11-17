@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 merkle-tree = {path="../merkle-tree"}
+
+k256 = "0.13.2"
+rand_core = "0.6.4"
