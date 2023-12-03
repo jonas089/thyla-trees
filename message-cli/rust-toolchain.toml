@@ -1,3 +1,0 @@
-[toolchain]
-channel = "stable-aarch64-apple-darwin"
-components = ["rustfmt", "rustc", "rust-src", "cargo", "clippy", "rust-docs", "rust-analyzer"]

@@ -1,7 +1,7 @@
 use std::thread::current;
-
 use crate::helpers::{hashLeftRight, hash_bytes};
 
+pub const ROOT_HISTORY_SIZE: u16 = 30u16;
 #[derive(Debug, Clone, PartialEq)]
 pub struct TornadoTree{
     pub zero_node: Vec<u8>,
@@ -41,17 +41,22 @@ impl TornadoTree{
             }
             current_index /= 2;
         }
+        
+        let current_root: Vec<u8> = self.filled.clone().pop().unwrap(); 
+        self.root_history[self.index as usize % ROOT_HISTORY_SIZE as usize] = current_root;
         self.index += 1;
+        
         proof_path
     }
 }
 
 #[test]
-fn test_tornado(){
-    let mut tree = TornadoTree{
+fn test_single_merkle_proof(){
+    // construct merkle tree
+    let mut tree: TornadoTree = TornadoTree{
         zero_node: hash_bytes(vec![0;32]),
         zero_levels: Vec::new(),
-        root_history: Vec::new(),
+        root_history: vec![Vec::new();30],
         filled: vec![vec![], vec![], vec![], vec![], vec![]],
         index: 0,
         depth: 5
@@ -64,6 +69,7 @@ fn test_tornado(){
     println!("Merkle root: {:?}", &merkle_root);
 
     let mut current_hash = proof_path[0].clone().0;
+    // reconstruct merkle root
     for i in 1..proof_path.len(){
         if &proof_path[i].1 == &true{
             current_hash = hashLeftRight(current_hash, proof_path[i].clone().0);
@@ -72,18 +78,33 @@ fn test_tornado(){
             current_hash = hashLeftRight(proof_path[i].clone().0, current_hash);
         }
     }
-
     assert_eq!(&current_hash, merkle_root);
 }
 
-/*
-- If the index is even, the sibling is the next node (index + 1) at the same level.
-- If the index is odd, the sibling is the previous node (index - 1).
-*/
+#[test]
+fn test_root_preservation(){
+    let mut tree: TornadoTree = TornadoTree{
+        zero_node: hash_bytes(vec![0;32]),
+        zero_levels: Vec::new(),
+        root_history: vec![Vec::new();30],
+        filled: vec![vec![], vec![], vec![], vec![], vec![]],
+        index: 0,
+        depth: 5
+    };
+    tree.calculate_zero_levels();
+    // add 30 leafs
+    for i in 0..30{
+        let _ = tree.add_leaf(vec![i;32].clone());        
+    };
+    let snapshot_at_30: &Vec<Vec<u8>> = &tree.clone().root_history;
+    let _ = tree.add_leaf(vec![30;32].clone());
 
-/* Information needed for merkle proof
-- index of leaf
-- sibling at each level
-
-- if leaf index is even, check
-*/
+    let snapshot_at_31: &Vec<Vec<u8>> = &tree.clone().root_history;
+    assert!(snapshot_at_30[0] != snapshot_at_31[0]);
+    
+    for (index, root) in snapshot_at_30.into_iter().enumerate(){
+        if index != 0{
+            assert_eq!(root, &snapshot_at_31[index]);
+        }
+    };
+}
