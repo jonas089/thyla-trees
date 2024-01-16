@@ -30,8 +30,8 @@ impl MerkleTree{
                 });
             }
             while current_level.len() > 1{
-                let left: MerkleNode = current_level.pop().expect("Missing left node!");
-                let right: MerkleNode = current_level.pop().expect("Missing left node!");
+                let left: MerkleNode = current_level.pop().unwrap();
+                let right: MerkleNode = current_level.pop().unwrap();
                 next_level.push(
                     MerkleNode{
                         data: hashLeftRight(left.clone().data, right.clone().data),
