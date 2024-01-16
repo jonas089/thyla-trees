@@ -1,5 +1,6 @@
 use crate::helpers::hashLeftRight;
-//use crate::error::MerkleTreeError;
+extern crate alloc;
+use alloc::{vec, vec::Vec, boxed::Box};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MerkleNode{
@@ -17,7 +18,7 @@ impl MerkleTree{
     pub fn build(&mut self, leafs: Vec<Vec<u8>>){
         let mut current_level: Vec<MerkleNode> = leafs
             .iter()
-            .map(|leaf| MerkleNode{data: leaf.to_owned(), left: None, right: None})
+            .map(|leaf| MerkleNode{data: leaf.clone(), left: None, right: None})
             .collect();
         current_level.reverse();
         while current_level.len() > 1{
@@ -119,5 +120,5 @@ fn merkle_proof(){
         }
     }
     assert_eq!(&current_hash, &root);
-    println!("Root: {:?}", &root);
+    //println!("Root: {:?}", &root);
 }

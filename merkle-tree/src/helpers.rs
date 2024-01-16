@@ -1,5 +1,7 @@
 extern crate sha256;
 use sha2::{Sha256, Digest};
+extern crate alloc;
+use alloc::vec::Vec;
 
 pub fn hash_bytes(input: Vec<u8>) -> Vec<u8> {
     let mut hasher = Sha256::new();
