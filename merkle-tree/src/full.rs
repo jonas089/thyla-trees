@@ -92,9 +92,10 @@ fn binary_merkle_tree(){
         root: None
     };
     tree.build(leafs);
+    let mut target_leaf: Vec<u8> = vec![0,0,0];
     let root: Vec<u8> = tree.clone().root.unwrap().data;
     let mut path: Vec<(Vec<u8>, u8)> = Vec::new();
-    let mut target: Vec<u8> = vec![0,0,0];
+    let mut target: Vec<u8> = target_leaf.clone();
     let mut target_parent: MerkleNode = tree.clone().discover_parent(&tree.clone().root.unwrap(), &target).unwrap();
     while &target != &root{
         let target_sibling: (Option<MerkleNode>, u8) = tree.clone().discover_sibling(&target_parent, &target).unwrap();
@@ -107,8 +108,7 @@ fn binary_merkle_tree(){
         };
     }
     path.reverse();
-    println!("Path: {:?}", &path);
-    let mut current_hash = vec![0,0,0];
+    let mut current_hash = target_leaf.clone();
     while !path.is_empty(){
         let sibling: (Vec<u8>, u8) = path.pop().unwrap();
         if sibling.1 == 0{
@@ -119,4 +119,5 @@ fn binary_merkle_tree(){
         }
     }
     assert_eq!(&current_hash, &root);
+    println!("Root: {:?}", &root);
 }
