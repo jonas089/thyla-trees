@@ -48,9 +48,9 @@ impl MerkleTree{
         }
         self.root = current_level.pop();
     }
-    pub fn discover_sibling(&self, parent: MerkleNode, target: Vec<u8>) -> Option<MerkleNode>{
+    pub fn discover_sibling(&self, parent: &MerkleNode, target: &Vec<u8>) -> Option<MerkleNode>{
         if let Some(ref left) = parent.left{
-            if parent.clone().left.unwrap().data == target{
+            if parent.clone().left.unwrap().data == target.to_vec(){
                 return Some(*parent.clone().right.unwrap());
             }
             else{
@@ -96,5 +96,17 @@ fn binary_merkle_tree(){
         root: None
     };
     tree.build(leafs);
-    println!("Tree: {:?}", &tree);
+    let root: Vec<u8> = tree.clone().root.unwrap().data;
+    let mut path: Vec<Vec<u8>> = Vec::new();
+    println!("Tree root: {:?}", &root);
+    let mut target: Vec<u8> = vec![0,0,0];
+    let mut target_parent: MerkleNode = tree.clone().discover_parent(&tree.clone().root.unwrap(), &target).unwrap();
+    while &target_parent.data != &root{
+        println!("Parent: {:?}, Root: {:?}", &target_parent.data, &root);
+        let target_sibling: MerkleNode = tree.clone().discover_sibling(&target_parent, &target).unwrap();
+        path.push(target_sibling.clone().data);
+        target = target_parent.clone().data;
+        target_parent = tree.clone().discover_parent(&tree.clone().root.unwrap(), &target_parent.clone().data).unwrap();
+    }
+    println!("Proof path: {:?}", &path);    
 }
