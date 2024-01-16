@@ -1,9 +1,5 @@
-// a fully constructed binary merkle tree for kairos
-
-use std::thread::current;
-
-use crate::helpers::{hash_bytes, hashLeftRight};
-use crate::error::MerkleTreeError;
+use crate::helpers::hashLeftRight;
+//use crate::error::MerkleTreeError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MerkleNode{
@@ -48,13 +44,13 @@ impl MerkleTree{
         }
         self.root = current_level.pop();
     }
-    pub fn discover_sibling(&self, parent: &MerkleNode, target: &Vec<u8>) -> Option<MerkleNode>{
+    pub fn discover_sibling(&self, parent: &MerkleNode, target: &Vec<u8>) -> Option<(Option<MerkleNode>, u8)>{
         if let Some(ref left) = parent.left{
             if parent.clone().left.unwrap().data == target.to_vec(){
-                return Some(*parent.clone().right.unwrap());
+                return Some((Some(*parent.clone().right.unwrap()), 0));
             }
             else{
-                return Some(*parent.clone().left.unwrap());
+                return Some((Some(*parent.clone().left.unwrap()), 1));
             }
         }
         else{
@@ -89,7 +85,7 @@ impl MerkleTree{
 #[test]
 fn binary_merkle_tree(){
     let mut leafs: Vec<Vec<u8>> = Vec::new();
-    for i in 0..5{
+    for i in 0..255{
         leafs.push(vec![0,0,i]);
     };
     let mut tree: MerkleTree = MerkleTree{
@@ -97,16 +93,30 @@ fn binary_merkle_tree(){
     };
     tree.build(leafs);
     let root: Vec<u8> = tree.clone().root.unwrap().data;
-    let mut path: Vec<Vec<u8>> = Vec::new();
-    println!("Tree root: {:?}", &root);
+    let mut path: Vec<(Vec<u8>, u8)> = Vec::new();
     let mut target: Vec<u8> = vec![0,0,0];
     let mut target_parent: MerkleNode = tree.clone().discover_parent(&tree.clone().root.unwrap(), &target).unwrap();
-    while &target_parent.data != &root{
-        println!("Parent: {:?}, Root: {:?}", &target_parent.data, &root);
-        let target_sibling: MerkleNode = tree.clone().discover_sibling(&target_parent, &target).unwrap();
-        path.push(target_sibling.clone().data);
+    while &target != &root{
+        let target_sibling: (Option<MerkleNode>, u8) = tree.clone().discover_sibling(&target_parent, &target).unwrap();
+        let target_sibling_node = target_sibling.0.unwrap();
+        let target_sibling_lr: u8 = target_sibling.1;
+        path.push((target_sibling_node.clone().data, target_sibling_lr));
         target = target_parent.clone().data;
-        target_parent = tree.clone().discover_parent(&tree.clone().root.unwrap(), &target_parent.clone().data).unwrap();
+        if &target != &root{
+            target_parent = tree.clone().discover_parent(&tree.clone().root.unwrap(), &target).unwrap();
+        };
     }
-    println!("Proof path: {:?}", &path);    
+    path.reverse();
+    println!("Path: {:?}", &path);
+    let mut current_hash = vec![0,0,0];
+    while !path.is_empty(){
+        let sibling: (Vec<u8>, u8) = path.pop().unwrap();
+        if sibling.1 == 0{
+            current_hash = hashLeftRight(current_hash, sibling.0);
+        }
+        else if sibling.1 == 1{
+            current_hash = hashLeftRight(sibling.0, current_hash);
+        }
+    }
+    assert_eq!(&current_hash, &root);
 }

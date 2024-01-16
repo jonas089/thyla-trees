@@ -111,10 +111,3 @@ fn optimized_merkle_tree(){
     tree.build(transactions);
     println!("Tree root: {:?}", tree.root);
 }
-
-
-
-#[derive(Debug, Clone, PartialEq)]
-struct OpTree{
-    levels: Vec<Vec<u8>>
-}
