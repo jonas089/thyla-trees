@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::thread::current;
 use uint::construct_uint;
 use crate::helpers::{hash_bytes, hashLeftRight};
-use crate::config::{DEFAULT_DEPTH};
-use crate::error::{MerkleTreeError};
+use crate::config::DEFAULT_DEPTH;
+use crate::error::MerkleTreeError;
 
 #[derive(Debug, Clone, PartialEq)]
 struct MerkleNode{
@@ -105,7 +105,7 @@ fn optimized_merkle_tree(){
     let mut tree = MerkleTree{
         root: None,
         zero_levels: None,
-        depth: 5
+        depth: DEFAULT_DEPTH
     };
     let transactions: Vec<Vec<u8>> = vec![vec![1;32]];
     tree.build(transactions);

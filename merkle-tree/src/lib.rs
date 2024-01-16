@@ -1,12 +1,14 @@
-use std::{collections::HashMap};
-use uint::construct_uint;
+mod error;
+mod config;
+
 pub mod helpers;
 pub mod tornado;
+pub mod optimized;
+pub mod full;
 
 
 
 /* Artifacts that I want to keep for now */
-
 
 // mod deprecated;
 // mod optimized;
@@ -17,6 +19,8 @@ pub mod tornado;
 
 
 /*
+use std::{collections::HashMap};
+use uint::construct_uint;
 fn main(){
     panic!("Run cargo test -- --nocapture instead!");
 }
