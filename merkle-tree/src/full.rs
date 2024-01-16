@@ -83,7 +83,7 @@ impl MerkleTree{
 }
 
 #[test]
-fn binary_merkle_tree(){
+fn merkle_proof(){
     let mut leafs: Vec<Vec<u8>> = Vec::new();
     for i in 0..255{
         leafs.push(vec![0,0,i]);
