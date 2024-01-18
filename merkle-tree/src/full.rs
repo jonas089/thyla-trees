@@ -120,5 +120,4 @@ fn merkle_proof(){
         }
     }
     assert_eq!(&current_hash, &root);
-    //println!("Root: {:?}", &root);
 }
