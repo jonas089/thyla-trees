@@ -229,14 +229,7 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
     }
 }
 
-fn insert_recursively(){
-    use crate::helpers::hash_bytes;
-    // create a set of 10 transactions
-    let mut transactions: Vec<Vec<u8>> = Vec::new();
-    for i in 0..1{
-        transactions.push(hash_bytes(vec![0,0,i]));
-    };
-    println!("Transactions: {:?}", &transactions);
+fn insert_recursively(transactions: Vec<Vec<u8>>) -> NodeEnum{
     // construct a trie root
     let mut trie_root = NodeEnum::Root(Root { 
         hash: None, 
@@ -246,12 +239,20 @@ fn insert_recursively(){
     for transaction in transactions{
         insert(&mut trie_root, transaction.as_ref(), 0);
     }
-    println!("Root: {:?}", &trie_root)
+    trie_root
 }
 
 #[test]
 fn tests(){
-    insert_recursively();
+    use crate::helpers::hash_bytes;
+    // create a set of 10 transactions
+    let mut transactions: Vec<Vec<u8>> = Vec::new();
+    for i in 0..1{
+        transactions.push(hash_bytes(vec![0,0,i]));
+    };
+    println!("Transactions: {:?}", &transactions);
+    let root = insert_recursively(transactions);
+    println!("Root: {:?}", &root);
 }
 
 /* How hashs are updated
