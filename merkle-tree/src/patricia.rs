@@ -284,7 +284,6 @@ fn check_for_target(trie_node: &NodeEnum, target_hash: &[u8], index: usize) -> b
 
     match trie_node {
         NodeEnum::Root(root) => {
-            // Repeat the logic for Root, similar to Node
             for child in &root.children {
                 match child {
                     NodeEnum::Node(node) => {
@@ -297,13 +296,12 @@ fn check_for_target(trie_node: &NodeEnum, target_hash: &[u8], index: usize) -> b
                             return true;
                         }
                     },
-                    _ => unreachable!(),
+                    _ => unreachable!("Root can't be a child!"),
                 }
             }
             false
         },
         NodeEnum::Node(node) => {
-            // Existing logic for Node
             for child in &node.children {
                 match child {
                     NodeEnum::Node(node) => {
@@ -316,7 +314,7 @@ fn check_for_target(trie_node: &NodeEnum, target_hash: &[u8], index: usize) -> b
                             return true;
                         }
                     },
-                    _ => unreachable!(),
+                    _ => unreachable!("Root can't be a child!"),
                 }
             }
             false
