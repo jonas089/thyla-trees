@@ -229,17 +229,11 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
     }
 }
 
-fn insert_recursively(transactions: Vec<Vec<u8>>) -> NodeEnum{
-    // construct a trie root
-    let mut trie_root = NodeEnum::Root(Root { 
-        hash: None, 
-        children: Vec::new()
-    });
+fn insert_recursively(trie_root: &mut NodeEnum, transactions: Vec<Vec<u8>>){
     // insert the set of transactions and update the trie
     for transaction in transactions{
-        insert(&mut trie_root, transaction.as_ref(), 0);
+        insert(trie_root, transaction.as_ref(), 0);
     }
-    trie_root
 }
 
 #[test]
@@ -251,8 +245,14 @@ fn tests(){
         transactions.push(hash_bytes(vec![0,0,i]));
     };
     println!("Transactions: {:?}", &transactions);
-    let root = insert_recursively(transactions);
-    println!("Root: {:?}", &root);
+    // create a trie instance
+    let mut trie_root = NodeEnum::Root(Root { 
+        hash: None, 
+        children: Vec::new()
+    });
+    // insert recursively
+    insert_recursively(&mut trie_root, transactions);
+    println!("Root: {:?}", &trie_root);
 }
 
 /* How hashs are updated
