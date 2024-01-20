@@ -1,32 +1,32 @@
 // Patricia Merkle Tree for use in Kairos V0
 
 extern crate alloc;
-use std::borrow::BorrowMut;
+use std::{borrow::BorrowMut, ops::Index};
 
 use crate::helpers::hash_bytes;
 //use alloc::boxed::Box;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 struct Root{
     hash: Option<Vec<u8>>,
     children: Vec<NodeEnum>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 struct Leaf{
     key: Vec<u8>,
     hash: Vec<u8>,
     serialized_data: Option<Vec<u8>>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 struct Node{
     key: Vec<u8>,
 	hash: Option<Vec<u8>>,
     children: Vec<NodeEnum>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 enum NodeEnum{
     Node(Node),
     Leaf(Leaf),
@@ -156,70 +156,75 @@ impl Appendable for Node{
     }
 }
 
-#[test]
-fn tests(){
+fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
+    if index >= transaction.len() - 1 {
+        return;
+    }
+    let chunk = &transaction[index..index + 2];
+    let is_last_chunk = index == transaction.len() - 2;
+    match current_node{
+        NodeEnum::Root(root) => {
+            if is_last_chunk{
+                unreachable!("This should never happen!");
+            }
+            else{
+                let mut new_node = NodeEnum::Node(Node{
+                    key: chunk.to_vec(),
+                    hash: None,
+                    children: Vec::new()
+                });
+                insert(&mut new_node, transaction, index + 2);
+                root.append(new_node.clone());
+            }
+        },
+        NodeEnum::Node(node) => {
+            if is_last_chunk{
+                let new_leaf = NodeEnum::Leaf(Leaf{ 
+                    key: chunk.to_vec(), 
+                    hash: hash_bytes(chunk.to_vec()), 
+                    serialized_data: None
+                });
+                node.append(new_leaf);
+            }
+            else{
+                let mut new_node = NodeEnum::Node(Node{
+                    key: chunk.to_vec(),
+                    hash: None,
+                    children: Vec::new()
+                });
+                insert(&mut new_node, transaction, index + 2);
+                node.append(new_node.clone());
+            }
+        },
+        NodeEnum::Leaf(leaf) => {
+            unreachable!("This should never happen!")
+        }
+    }
+}
+
+fn insert_recursively(){
     use crate::helpers::hash_bytes;
     // create a set of 10 transactions
     let mut transactions: Vec<Vec<u8>> = Vec::new();
-    for i in 0..10{
+    for i in 0..1{
         transactions.push(hash_bytes(vec![0,0,i]));
     };
+    println!("Transactions: {:?}", &transactions);
     // construct a trie root
     let mut trie_root = NodeEnum::Root(Root { 
         hash: None, 
         children: Vec::new()
     });
     // insert the set of transactions and update the trie
-    let mut current_node = trie_root.clone();
     for transaction in transactions{
-        for chunk in transaction.chunks(2){
-            // should first check if the chunk already exists
-            /*
-            
-            
-                tbd.
-            
-            */
-            match &mut current_node{
-                NodeEnum::Root(root) => {
-                    if chunk == &transaction[transaction.len() - 2..]{
-                        unreachable!("This should never happen!");
-                    }
-                    else{
-                        let mut new_node = NodeEnum::Node(Node{
-                            key: chunk.to_vec(),
-                            hash: None,
-                            children: Vec::new()
-                        });
-                        root.append(new_node.clone());
-                        current_node = new_node;
-                    }
-                },
-                NodeEnum::Node(node) => {
-                    if chunk == &transaction[transaction.len() - 2..]{
-                        let new_leaf = NodeEnum::Leaf(Leaf{ 
-                            key: chunk.to_vec(), 
-                            hash: hash_bytes(chunk.to_vec()), 
-                            serialized_data: None
-                        });
-                        node.append(new_leaf);
-                    }
-                    else{
-                        let mut new_node = NodeEnum::Node(Node{
-                            key: chunk.to_vec(),
-                            hash: None,
-                            children: Vec::new()
-                        });
-                        node.append(new_node.clone());
-                        current_node = new_node;
-                    }
-                },
-                NodeEnum::Leaf(leaf) => {
-                    unreachable!("This should never happen!")
-                }
-            }
-        }
+        insert(&mut trie_root, transaction.as_ref(), 0);
     }
+    println!("Root: {:?}", &trie_root)
+}
+
+#[test]
+fn tests(){
+    insert_recursively();
 }
 
 /* How hashs are updated
