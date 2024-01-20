@@ -1,7 +1,13 @@
 // Patricia Merkle Tree for use in Kairos V0
 
+/* Performance issues with this merkle trie
+    * insertion algorithm re-hashs the affected nodes/leafs
+    * Keys are not being used efficiently -> they should be actual keys in a HashMap
+    -> replace Vec<NodeEnum> with a HashMap<String, NodeEnum> 
+*/
+
 extern crate alloc;
-use std::borrow::BorrowMut;
+use std::{borrow::BorrowMut, vec};
 
 use crate::helpers::hash_bytes;
 //use alloc::boxed::Box;
@@ -262,26 +268,12 @@ fn insert_recursively(trie_root: &mut NodeEnum, transactions: Vec<Vec<u8>>){
     }
 }
 
-/*
-fn check_for_target(trie_root: &mut NodeEnum, target_hash: &[u8], index: usize){
-    if index >= target_hash.len() - 1 {
-        return;
-    }
-    let chunk = &target_hash[index..index + 2];
-    let is_last_chunk = index == target_hash.len() - 2;
-    /*
-        check if the current chunk is the key of a child of the current node,
-        the current node can be a Root or Node, but never a Leaf
-    */
-}*/
-
 fn check_for_target(trie_node: &NodeEnum, target_hash: &[u8], index: usize) -> bool {
     if index >= target_hash.len() - 1 {
         return false;
     }
     let chunk = &target_hash[index..index + 2];
     let is_last_chunk = index == target_hash.len() - 2;
-
     match trie_node {
         NodeEnum::Root(root) => {
             for child in &root.children {
@@ -329,14 +321,19 @@ fn check_for_target(trie_node: &NodeEnum, target_hash: &[u8], index: usize) -> b
 #[test]
 fn tests(){
     use crate::helpers::hash_bytes;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+
     // create a set of 10 transactions
-    
     let mut transactions: Vec<Vec<u8>> = Vec::new();
-    for i in 0..255{
-        transactions.push(hash_bytes(vec![0,0,i]));
-    };
-
-
+    for i in 0..10{
+        for j in 0..10{
+            for k in 0..10{
+                transactions.push(hash_bytes(vec![i,j,k]));
+            }
+        }
+    }
     //println!("Transactions: {:?}", &transactions);
     // create a trie instance
     let mut trie_root = NodeEnum::Root(Root { 
@@ -345,8 +342,10 @@ fn tests(){
     });
     // insert recursively
     insert_recursively(&mut trie_root, transactions.clone());
-    println!("Root: {:?}", &trie_root);
+    //println!("Root: {:?}", &trie_root);
     for transaction in transactions{
         assert!(check_for_target(&trie_root, &transaction, 0));
     }
+    let elapsed_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - start_time;
+    println!("Elapsed time: {:?}", &elapsed_time);
 }
