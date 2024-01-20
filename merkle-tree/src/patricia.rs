@@ -164,9 +164,21 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
     let is_last_chunk = index == transaction.len() - 2;
     match current_node{
         NodeEnum::Root(root) => {
+            /*
+                check if already exists in children
+            */
+
+            // to be done!
+
+            /*
+                error when trying to add a leaf as a child of the root
+            */
             if is_last_chunk{
                 unreachable!("This should never happen!");
             }
+            /*
+                add a new node as a child of the root
+            */
             else{
                 let mut new_node = NodeEnum::Node(Node{
                     key: chunk.to_vec(),
@@ -175,9 +187,19 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
                 });
                 insert(&mut new_node, transaction, index + 2);
                 root.append(new_node.clone());
+                root.update();
             }
         },
         NodeEnum::Node(node) => {
+            /*
+                check if already exists in children
+            */
+            
+            // to be done!
+
+            /*
+                add a leaf as a final child of the node
+            */
             if is_last_chunk{
                 let new_leaf = NodeEnum::Leaf(Leaf{ 
                     key: chunk.to_vec(), 
@@ -185,7 +207,11 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
                     serialized_data: None
                 });
                 node.append(new_leaf);
+                node.update();
             }
+            /* 
+                add a node as a child of the node
+            */
             else{
                 let mut new_node = NodeEnum::Node(Node{
                     key: chunk.to_vec(),
@@ -194,6 +220,7 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
                 });
                 insert(&mut new_node, transaction, index + 2);
                 node.append(new_node.clone());
+                node.update();
             }
         },
         NodeEnum::Leaf(leaf) => {
