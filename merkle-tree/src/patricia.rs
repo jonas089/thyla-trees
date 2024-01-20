@@ -109,12 +109,12 @@ impl NodeEnum{
     }
 }
 
-trait Updateable{
+trait Updatable{
     fn update(&mut self);
     // recursive update function?
 }
 
-impl Updateable for Root{
+impl Updatable for Root{
     fn update(&mut self) {
         if self.children.is_empty(){
             return;
@@ -127,7 +127,7 @@ impl Updateable for Root{
     }
 }
 
-impl Updateable for Node{
+impl Updatable for Node{
     fn update(&mut self) {
         if self.children.is_empty(){
             return;
