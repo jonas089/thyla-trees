@@ -174,20 +174,10 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
     let is_last_chunk = index == transaction.len() - CHUNK_SIZE;
     match current_node{
         NodeEnum::Root(root) => {
-            /*
-                error when trying to add a leaf as a child of the root
-            */
             if is_last_chunk{
                 unreachable!("This should never happen!");
             }
-            /*
-                add a new node as a child of the root
-            */
             else{
-                /*
-                    if the node already exists, re-use it instead of creating a new one
-                    => every node will be unique
-                */
                 let mut has_key = false;
                 for child in &mut root.children{
                     match child{
@@ -214,9 +204,6 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
             }
         },
         NodeEnum::Node(node) => {
-            /*
-                add a leaf as a final child of the node
-            */
             if is_last_chunk{
                 let new_leaf = NodeEnum::Leaf(Leaf{ 
                     key: chunk.to_vec(), 
@@ -226,9 +213,6 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
                 node.append(new_leaf);
                 node.update();
             }
-            /* 
-                add a node as a child of the node
-            */
             else{
                 let mut has_key = false;
                 for child in &mut node.children{
