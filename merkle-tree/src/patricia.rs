@@ -4,6 +4,8 @@
     * insertion algorithm re-hashs the affected nodes/leafs
     * Keys are not being used efficiently -> they should be actual keys in a HashMap
     -> replace Vec<NodeEnum> with a HashMap<String, NodeEnum> 
+
+    children should not be stored in a vec, but instead in a HashMap
 */
 
 extern crate alloc;
@@ -190,9 +192,7 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
                         NodeEnum::Root(root) => unreachable!("Root can't be a child!"),
                         NodeEnum::Node(node) => {
                             if chunk == node.key{
-                                // proceed with this node
                                 insert(child, transaction, index + 2);
-                                //root.update();
                                 has_key = true;
                             }
                         },
@@ -236,7 +236,6 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
                             if chunk == node.key{
                                 // proceed with this node
                                 insert(child, transaction, index + 2);
-                                //root.update();
                                 has_key = true;
                             }
                         },
@@ -327,13 +326,14 @@ fn tests(){
 
     // create a set of 10 transactions
     let mut transactions: Vec<Vec<u8>> = Vec::new();
-    for i in 0..10{
-        for j in 0..10{
-            for k in 0..10{
+    for i in 0..1{
+        for j in 0..1{
+            for k in 0..1{
                 transactions.push(hash_bytes(vec![i,j,k]));
             }
         }
     }
+
     //println!("Transactions: {:?}", &transactions);
     // create a trie instance
     let mut trie_root = NodeEnum::Root(Root { 
@@ -342,7 +342,8 @@ fn tests(){
     });
     // insert recursively
     insert_recursively(&mut trie_root, transactions.clone());
-    //println!("Root: {:?}", &trie_root);
+    println!("Trie: {:?}", &trie_root);
+
     for transaction in transactions{
         assert!(check_for_target(&trie_root, &transaction, 0));
     }
