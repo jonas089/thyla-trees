@@ -10,9 +10,11 @@
 
 extern crate alloc;
 use std::{borrow::BorrowMut, vec};
-
+use std::time::{SystemTime, UNIX_EPOCH};
 use crate::helpers::hash_bytes;
 //use alloc::boxed::Box;
+
+const CHUNK_SIZE: usize = 2;
 
 #[derive(Clone, PartialEq, Debug)]
 struct Root{
@@ -168,8 +170,8 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
     if index >= transaction.len() - 1 {
         return;
     }
-    let chunk = &transaction[index..index + 2];
-    let is_last_chunk = index == transaction.len() - 2;
+    let chunk = &transaction[index..index + CHUNK_SIZE];
+    let is_last_chunk = index == transaction.len() - CHUNK_SIZE;
     match current_node{
         NodeEnum::Root(root) => {
             /*
@@ -192,7 +194,7 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
                         NodeEnum::Root(root) => unreachable!("Root can't be a child!"),
                         NodeEnum::Node(node) => {
                             if chunk == node.key{
-                                insert(child, transaction, index + 2);
+                                insert(child, transaction, index + CHUNK_SIZE);
                                 has_key = true;
                             }
                         },
@@ -205,7 +207,7 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
                         hash: None,
                         children: Vec::new()
                     });
-                    insert(&mut new_node, transaction, index + 2);
+                    insert(&mut new_node, transaction, index + CHUNK_SIZE);
                     root.append(new_node.clone());
                     root.update();
                 }
@@ -235,7 +237,7 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
                         NodeEnum::Node(node) => {
                             if chunk == node.key{
                                 // proceed with this node
-                                insert(child, transaction, index + 2);
+                                insert(child, transaction, index + CHUNK_SIZE);
                                 has_key = true;
                             }
                         },
@@ -248,7 +250,7 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
                         hash: None,
                         children: Vec::new()
                     });
-                    insert(&mut new_node, transaction, index + 2);
+                    insert(&mut new_node, transaction, index + CHUNK_SIZE);
                     node.append(new_node.clone());
                     node.update();
                 }
@@ -262,8 +264,12 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize){
 
 fn insert_recursively(trie_root: &mut NodeEnum, transactions: Vec<Vec<u8>>){
     // insert the set of transactions and update the trie
+    let mut height = 0;
     for transaction in transactions{
+        let start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
         insert(trie_root, transaction.as_ref(), 0);
+        println!("Elapsed time: {:?} height: {:?}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - start_time, &height);
+        height += 1;
     }
 }
 
@@ -271,15 +277,15 @@ fn check_for_target(trie_node: &NodeEnum, target_hash: &[u8], index: usize) -> b
     if index >= target_hash.len() - 1 {
         return false;
     }
-    let chunk = &target_hash[index..index + 2];
-    let is_last_chunk = index == target_hash.len() - 2;
+    let chunk = &target_hash[index..index + CHUNK_SIZE];
+    let is_last_chunk = index == target_hash.len() - CHUNK_SIZE;
     match trie_node {
         NodeEnum::Root(root) => {
             for child in &root.children {
                 match child {
                     NodeEnum::Node(node) => {
                         if node.key == chunk {
-                            return check_for_target(child, target_hash, index + 2);
+                            return check_for_target(child, target_hash, index + CHUNK_SIZE);
                         }
                     },
                     NodeEnum::Leaf(leaf) => {
@@ -297,7 +303,7 @@ fn check_for_target(trie_node: &NodeEnum, target_hash: &[u8], index: usize) -> b
                 match child {
                     NodeEnum::Node(node) => {
                         if node.key == chunk {
-                            return check_for_target(child, target_hash, index + 2);
+                            return check_for_target(child, target_hash, index + CHUNK_SIZE);
                         }
                     },
                     NodeEnum::Leaf(leaf) => {
@@ -318,17 +324,14 @@ fn check_for_target(trie_node: &NodeEnum, target_hash: &[u8], index: usize) -> b
 
 
 #[test]
-fn tests(){
+fn test_patricia(){
     use crate::helpers::hash_bytes;
-    use std::time::{SystemTime, UNIX_EPOCH};
-
     let start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-
     // create a set of 10 transactions
     let mut transactions: Vec<Vec<u8>> = Vec::new();
-    for i in 0..1{
-        for j in 0..1{
-            for k in 0..1{
+    for i in 0..100{
+        for j in 0..10{
+            for k in 0..10{
                 transactions.push(hash_bytes(vec![i,j,k]));
             }
         }
@@ -342,8 +345,6 @@ fn tests(){
     });
     // insert recursively
     insert_recursively(&mut trie_root, transactions.clone());
-    println!("Trie: {:?}", &trie_root);
-
     for transaction in transactions{
         assert!(check_for_target(&trie_root, &transaction, 0));
     }

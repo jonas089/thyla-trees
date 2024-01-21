@@ -1,4 +1,5 @@
 // modified version of patricia.rs created w. help of GPT
+// insert takes very long?
 
 extern crate alloc;
 use std::{collections::HashMap, borrow::BorrowMut};
@@ -157,10 +158,12 @@ fn insert(current_node: &mut NodeEnum, transaction: &[u8], index: usize) {
 }
 
 fn insert_recursively(trie_root: &mut NodeEnum, transactions: Vec<Vec<u8>>) {
-    for transaction in transactions {
+    let mut height = 0;
+    for transaction in transactions{
         let start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-        insert(trie_root, &transaction, 0);
-        println!("Insert time: {:?}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - start_time);
+        insert(trie_root, transaction.as_ref(), 0);
+        println!("Elapsed time: {:?} height: {:?}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - start_time, &height);
+        height += 1;
     }
 }
 
@@ -207,12 +210,12 @@ fn check_for_target(trie_node: &NodeEnum, target_hash: &[u8], index: usize) -> b
 }
 
 #[test]
-fn tests() {
+fn test_gptv() {
     let start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
 
     let mut transactions: Vec<Vec<u8>> = Vec::new();
     for i in 0..100 {
-        for j in 0..100 {
+        for j in 0..10 {
             for k in 0..10 {
                 transactions.push(hash_bytes(vec![i, j, k]));
             }
@@ -228,7 +231,6 @@ fn tests() {
     for transaction in transactions {
         assert!(check_for_target(&trie_root, &transaction, 0));
     };
-    println!("Trie: {:?}", &trie_root);
 
     let elapsed_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - start_time;
     println!("Elapsed time: {:?}", elapsed_time);
