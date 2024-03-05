@@ -8,7 +8,7 @@ pub fn hash_bytes(input: Vec<u8>) -> Vec<u8> {
     result.to_vec()
 }
 
-pub fn hashLeftRight(mut left: Vec<u8>, mut right: Vec<u8>) -> Vec<u8>{
+pub fn hash_left_right(mut left: Vec<u8>, mut right: Vec<u8>) -> Vec<u8>{
     left.append(&mut right);
     hash_bytes(left)
 }

@@ -1,4 +1,4 @@
-use crate::helpers::hashLeftRight;
+use crate::helpers::hash_left_right;
 //use crate::error::MerkleTreeError;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -34,7 +34,7 @@ impl MerkleTree{
                 let right: MerkleNode = current_level.pop().unwrap();
                 next_level.push(
                     MerkleNode{
-                        data: hashLeftRight(left.clone().data, right.clone().data),
+                        data: hash_left_right(left.clone().data, right.clone().data),
                         left: Some(Box::new(left)),
                         right: Some(Box::new(right))
                     }
@@ -112,10 +112,10 @@ fn merkle_proof(){
     while !path.is_empty(){
         let sibling: (Vec<u8>, u8) = path.pop().unwrap();
         if sibling.1 == 0{
-            current_hash = hashLeftRight(current_hash, sibling.0);
+            current_hash = hash_left_right(current_hash, sibling.0);
         }
         else if sibling.1 == 1{
-            current_hash = hashLeftRight(sibling.0, current_hash);
+            current_hash = hash_left_right(sibling.0, current_hash);
         }
     }
     assert_eq!(&current_hash, &root);

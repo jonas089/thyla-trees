@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::thread::current;
 use uint::construct_uint;
-use crate::helpers::{hash_bytes, hashLeftRight};
+use crate::helpers::{hash_bytes, hash_left_right};
 use crate::config::DEFAULT_DEPTH;
 use crate::error::MerkleTreeError;
 
@@ -41,7 +41,7 @@ impl MerkleTree{
     fn calculate_zero_levels(&mut self, zero_node: Vec<u8>){
         let mut zero_levels: Vec<Vec<u8>> = vec![zero_node];
         for level in 0..self.depth - 2{
-            zero_levels.push(hashLeftRight(zero_levels[zero_levels.len()-1].clone(), zero_levels[zero_levels.len()-1].clone()))
+            zero_levels.push(hash_left_right(zero_levels[zero_levels.len()-1].clone(), zero_levels[zero_levels.len()-1].clone()))
         };
         self.zero_levels = Some(zero_levels);
     }
@@ -85,7 +85,7 @@ impl MerkleTree{
                 }
                 else{
                     next_level.push(MerkleNode { 
-                        data: hashLeftRight(left.clone().data, right.clone().data), 
+                        data: hash_left_right(left.clone().data, right.clone().data), 
                         left: Some(Box::new(left)), 
                         right: Some(Box::new(right)) 
                     });
